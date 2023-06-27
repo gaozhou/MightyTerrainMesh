@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using KdTree;
 
@@ -18,19 +19,19 @@ namespace MightyTerrainMesh
         }
     }
 
-    public interface ITerrainTreeScaner
+    public interface ITerrainTreeScanner
     {
-        void Run(Vector3 center, out Vector3 hitpos, out Vector3 hitnormal);
+        void Run(Vector3 center, out Vector3 hitPos, out Vector3 hitNormal);
     }
 
     public abstract class SamplerBase
     {
-        public virtual void RunSample(ITerrainTreeScaner scaner)
+        public virtual void RunSample(ITerrainTreeScanner scanner)
         {
-            scaner.Run(mVertex.Position, out mVertex.Position, out mVertex.Normal);
+            scanner.Run(MVertex.Position, out MVertex.Position, out MVertex.Normal);
         }
 
-        protected SampleVertexData mVertex;
+        protected SampleVertexData MVertex;
         public Dictionary<byte, SampleVertexData> Boundaries = new Dictionary<byte, SampleVertexData>();
         public abstract Vector3 Pos { get; }
         public abstract void GetData(List<SampleVertexData> lPos, Dictionary<byte, List<SampleVertexData>> bd);
@@ -39,36 +40,29 @@ namespace MightyTerrainMesh
 
     public class SamplerLeaf : SamplerBase
     {
-        public override Vector3 Pos
-        {
-            get { return mVertex != null ? mVertex.Position : Vector3.zero; }
-        }
+        public override Vector3 Pos => MVertex?.Position ?? Vector3.zero;
 
-        public Vector3 Normal
-        {
-            get { return mVertex != null ? mVertex.Normal : Vector3.up; }
-        }
+        public Vector3 Normal => MVertex?.Normal ?? Vector3.up;
 
-        public Vector2 UV
-        {
-            get { return mVertex != null ? mVertex.UV : Vector2.zero; }
-        }
+        public Vector2 UV => MVertex?.UV ?? Vector2.zero;
 
         public SamplerLeaf(Vector3 center, Vector2 uv)
         {
-            mVertex = new SampleVertexData();
-            mVertex.Position = center;
-            mVertex.UV = uv;
+            MVertex = new SampleVertexData
+            {
+                Position = center,
+                UV = uv
+            };
         }
 
         public SamplerLeaf(SampleVertexData vert)
         {
-            mVertex = vert;
+            MVertex = vert;
         }
 
         public override void GetData(List<SampleVertexData> lData, Dictionary<byte, List<SampleVertexData>> bd)
         {
-            lData.Add(mVertex);
+            lData.Add(MVertex);
             foreach (var k in Boundaries.Keys)
             {
                 if (!bd.ContainsKey(k))
@@ -85,77 +79,60 @@ namespace MightyTerrainMesh
 
     public class SamplerNode : SamplerBase
     {
-        public override Vector3 Pos
-        {
-            get { return mVertex != null ? mVertex.Position : Vector3.zero; }
-        }
+        public override Vector3 Pos => MVertex?.Position ?? Vector3.zero;
 
-        public SamplerBase[] Children = new SamplerBase[4];
+        private readonly SamplerBase[] _children = new SamplerBase[4];
 
-        public bool isFullLeaf
-        {
-            get
-            {
-                for (int i = 0; i < Children.Length; ++i)
-                {
-                    if (Children[i] == null || !(Children[i] is SamplerLeaf))
-                        return false;
-                }
+        public bool IsFullLeaf => _children.All(t => t is SamplerLeaf _);
 
-                return true;
-            }
-        }
-
-        //
-        protected SamplerNode()
-        {
-        }
 
         //build a full tree
         public SamplerNode(int sub, Vector3 center, Vector2 size, Vector2 uv, Vector2 uvstep)
         {
-            mVertex = new SampleVertexData();
-            mVertex.Position = center;
-            mVertex.UV = uv;
-            Vector2 subsize = 0.5f * size;
-            Vector2 subuvstep = 0.5f * uvstep;
+            MVertex = new SampleVertexData
+            {
+                Position = center,
+                UV = uv
+            };
+            var subSize = 0.5f * size;
+            var subUVStep = 0.5f * uvstep;
             if (sub > 1)
             {
-                Children[0] = new SamplerNode(sub - 1,
-                    new Vector3(center.x - 0.5f * subsize.x, center.y, center.z - 0.5f * subsize.y), subsize,
-                    new Vector2(uv.x - 0.5f * subuvstep.x, uv.y - 0.5f * subuvstep.y), subuvstep);
-                Children[1] = new SamplerNode(sub - 1,
-                    new Vector3(center.x + 0.5f * subsize.x, center.y, center.z - 0.5f * subsize.y), subsize,
-                    new Vector2(uv.x + 0.5f * subuvstep.x, uv.y - 0.5f * subuvstep.y), subuvstep);
-                Children[2] = new SamplerNode(sub - 1,
-                    new Vector3(center.x - 0.5f * subsize.x, center.y, center.z + 0.5f * subsize.y), subsize,
-                    new Vector2(uv.x - 0.5f * subuvstep.x, uv.y + 0.5f * subuvstep.y), subuvstep);
-                Children[3] = new SamplerNode(sub - 1,
-                    new Vector3(center.x + 0.5f * subsize.x, center.y, center.z + 0.5f * subsize.y), subsize,
-                    new Vector2(uv.x + 0.5f * subuvstep.x, uv.y + 0.5f * subuvstep.y), subuvstep);
+                _children[0] = new SamplerNode(sub - 1,
+                    new Vector3(center.x - 0.5f * subSize.x, center.y, center.z - 0.5f * subSize.y), subSize,
+                    new Vector2(uv.x - 0.5f * subUVStep.x, uv.y - 0.5f * subUVStep.y), subUVStep);
+                _children[1] = new SamplerNode(sub - 1,
+                    new Vector3(center.x + 0.5f * subSize.x, center.y, center.z - 0.5f * subSize.y), subSize,
+                    new Vector2(uv.x + 0.5f * subUVStep.x, uv.y - 0.5f * subUVStep.y), subUVStep);
+                _children[2] = new SamplerNode(sub - 1,
+                    new Vector3(center.x - 0.5f * subSize.x, center.y, center.z + 0.5f * subSize.y), subSize,
+                    new Vector2(uv.x - 0.5f * subUVStep.x, uv.y + 0.5f * subUVStep.y), subUVStep);
+                _children[3] = new SamplerNode(sub - 1,
+                    new Vector3(center.x + 0.5f * subSize.x, center.y, center.z + 0.5f * subSize.y), subSize,
+                    new Vector2(uv.x + 0.5f * subUVStep.x, uv.y + 0.5f * subUVStep.y), subUVStep);
             }
             else
             {
-                Children[0] = new SamplerLeaf(
-                    new Vector3(center.x - 0.5f * subsize.x, center.y, center.z - 0.5f * subsize.y),
-                    new Vector2(uv.x - 0.5f * subuvstep.x, uv.y - 0.5f * subuvstep.y));
-                Children[1] = new SamplerLeaf(
-                    new Vector3(center.x + 0.5f * subsize.x, center.y, center.z - 0.5f * subsize.y),
-                    new Vector2(uv.x + 0.5f * subuvstep.x, uv.y - 0.5f * subuvstep.y));
-                Children[2] = new SamplerLeaf(
-                    new Vector3(center.x - 0.5f * subsize.x, center.y, center.z + 0.5f * subsize.y),
-                    new Vector2(uv.x - 0.5f * subuvstep.x, uv.y + 0.5f * subuvstep.y));
-                Children[3] = new SamplerLeaf(
-                    new Vector3(center.x + 0.5f * subsize.x, center.y, center.z + 0.5f * subsize.y),
-                    new Vector2(uv.x + 0.5f * subuvstep.x, uv.y + 0.5f * subuvstep.y));
+                _children[0] = new SamplerLeaf(
+                    new Vector3(center.x - 0.5f * subSize.x, center.y, center.z - 0.5f * subSize.y),
+                    new Vector2(uv.x - 0.5f * subUVStep.x, uv.y - 0.5f * subUVStep.y));
+                _children[1] = new SamplerLeaf(
+                    new Vector3(center.x + 0.5f * subSize.x, center.y, center.z - 0.5f * subSize.y),
+                    new Vector2(uv.x + 0.5f * subUVStep.x, uv.y - 0.5f * subUVStep.y));
+                _children[2] = new SamplerLeaf(
+                    new Vector3(center.x - 0.5f * subSize.x, center.y, center.z + 0.5f * subSize.y),
+                    new Vector2(uv.x - 0.5f * subUVStep.x, uv.y + 0.5f * subUVStep.y));
+                _children[3] = new SamplerLeaf(
+                    new Vector3(center.x + 0.5f * subSize.x, center.y, center.z + 0.5f * subSize.y),
+                    new Vector2(uv.x + 0.5f * subUVStep.x, uv.y + 0.5f * subUVStep.y));
             }
         }
 
         public override void GetData(List<SampleVertexData> lData, Dictionary<byte, List<SampleVertexData>> bd)
         {
-            for (int i = 0; i < 4; ++i)
+            for (var i = 0; i < 4; ++i)
             {
-                Children[i].GetData(lData, bd);
+                _children[i].GetData(lData, bd);
             }
 
             foreach (var k in Boundaries.Keys)
@@ -166,51 +143,50 @@ namespace MightyTerrainMesh
             }
         }
 
-        public override void RunSample(ITerrainTreeScaner scaner)
+        public override void RunSample(ITerrainTreeScanner scanner)
         {
-            base.RunSample(scaner);
+            base.RunSample(scanner);
             for (int i = 0; i < 4; ++i)
             {
-                Children[i].RunSample(scaner);
+                _children[i].RunSample(scanner);
             }
         }
 
         public override void AddBoundary(int subdivision, int x, int z, byte bk, SampleVertexData point)
         {
             //first grade
-            int u = x >> subdivision; // x / power(2, subdivision);
-            int v = z >> subdivision;
-            int subx = x - u * (1 << subdivision);
-            int subz = z - v * (1 << subdivision);
+            var u = x >> subdivision; // x / power(2, subdivision);
+            var v = z >> subdivision;
+            var subX = x - u * (1 << subdivision);
+            var subZ = z - v * (1 << subdivision);
             --subdivision;
-            int idx = (subz >> subdivision) * 2 + (subx >> subdivision);
-            Children[idx].AddBoundary(subdivision, subx, subz, bk, point);
+            var idx = (subZ >> subdivision) * 2 + (subX >> subdivision);
+            _children[idx].AddBoundary(subdivision, subX, subZ, bk, point);
         }
 
         public SamplerLeaf Combine(float angleErr)
         {
-            for (int i = 0; i < Children.Length; ++i)
+            if (_children.Any(t => !(t is SamplerLeaf _)))
             {
-                if (Children[i] == null || !(Children[i] is SamplerLeaf))
-                    return null;
+                return null;
             }
 
-            for (int i = 0; i < Children.Length; ++i)
+            foreach (var t in _children)
             {
-                SamplerLeaf l = (SamplerLeaf)Children[i];
-                float dot = Vector3.Dot(l.Normal.normalized, mVertex.Normal.normalized);
+                var l = (SamplerLeaf)t;
+                var dot = Vector3.Dot(l.Normal.normalized, MVertex.Normal.normalized);
                 if (Mathf.Rad2Deg * Mathf.Acos(dot) >= angleErr)
                     return null;
             }
 
-            SamplerLeaf leaf = new SamplerLeaf(mVertex);
-            for (int i = 0; i < Children.Length; ++i)
+            var leaf = new SamplerLeaf(MVertex);
+            foreach (var t in _children)
             {
-                SamplerLeaf l = (SamplerLeaf)Children[i];
+                var l = (SamplerLeaf)t;
                 foreach (var k in l.Boundaries.Keys)
                 {
-                    if (Boundaries.ContainsKey(k))
-                        Boundaries[k].Merge(l.Boundaries[k]);
+                    if (Boundaries.TryGetValue(k, out var boundary))
+                        boundary.Merge(l.Boundaries[k]);
                     else
                         Boundaries.Add(k, l.Boundaries[k]);
                 }
@@ -222,19 +198,15 @@ namespace MightyTerrainMesh
 
         public void CombineNode(float angleErr)
         {
-            for (int i = 0; i < 4; ++i)
+            for (var i = 0; i < 4; ++i)
             {
-                if (Children[i] is SamplerNode)
-                {
-                    SamplerNode subNode = (SamplerNode)Children[i];
-                    subNode.CombineNode(angleErr);
-                    if (subNode.isFullLeaf)
-                    {
-                        SamplerLeaf replacedLeaf = subNode.Combine(angleErr);
-                        if (replacedLeaf != null)
-                            Children[i] = replacedLeaf;
-                    }
-                }
+                if (!(_children[i] is SamplerNode)) continue;
+                var subNode = (SamplerNode)_children[i];
+                subNode.CombineNode(angleErr);
+                if (!subNode.IsFullLeaf) continue;
+                var replacedLeaf = subNode.Combine(angleErr);
+                if (replacedLeaf != null)
+                    _children[i] = replacedLeaf;
             }
         }
     }
@@ -249,73 +221,64 @@ namespace MightyTerrainMesh
         public const byte TBorder = 5;
         public const byte LBorder = 6;
         public const byte RBorder = 7;
-        private SamplerBase mNode;
-        public List<SampleVertexData> Vertices = new List<SampleVertexData>();
+        private SamplerBase _node;
+        public readonly List<SampleVertexData> Vertices = new List<SampleVertexData>();
 
-        public Dictionary<byte, List<SampleVertexData>> Boundaries =
+        public readonly Dictionary<byte, List<SampleVertexData>> Boundaries =
             new Dictionary<byte, List<SampleVertexData>>();
 
-        public HashSet<byte> StitchedBorders = new HashSet<byte>();
+        public readonly HashSet<byte> StitchedBorders = new HashSet<byte>();
 
-        public Vector3 Center
-        {
-            get { return mNode.Pos; }
-        }
+        public Vector3 Center => _node.Pos;
 
-        public Bounds BND { get; set; }
-        public Vector2 uvMin = Vector2.zero;
-        public Vector2 uvMax = Vector2.one;
-        private Dictionary<byte, KdTree<float, int>> BoundaryKDTree = new Dictionary<byte, KdTree<float, int>>();
+        public Bounds Bounds { get; set; }
+        public Vector2 UVMin;
+        public Vector2 UVMax;
+
+        private readonly Dictionary<byte, KdTree<float, int>> _boundaryKdTree =
+            new Dictionary<byte, KdTree<float, int>>();
 
         public SamplerTree(int sub, Vector3 center, Vector2 size, Vector2 uv, Vector2 uvstep)
         {
-            mNode = new SamplerNode(sub, center, size, uv, uvstep);
-            uvMin = uv - 0.5f * uvstep;
-            uvMax = uv + 0.5f * uvstep;
+            _node = new SamplerNode(sub, center, size, uv, uvstep);
+            UVMin = uv - 0.5f * uvstep;
+            UVMax = uv + 0.5f * uvstep;
         }
 
         private void CombineTree(float angleErr)
         {
-            if (mNode is SamplerNode)
-            {
-                SamplerNode node = (SamplerNode)mNode;
-                node.CombineNode(angleErr);
-                if (node.isFullLeaf)
-                {
-                    SamplerLeaf leaf = node.Combine(angleErr);
-                    if (leaf != null)
-                        mNode = leaf;
-                }
-            }
+            if (!(_node is SamplerNode node)) return;
+            node.CombineNode(angleErr);
+            if (!node.IsFullLeaf) return;
+            var leaf = node.Combine(angleErr);
+            if (leaf != null)
+                _node = leaf;
         }
 
         public void AddBoundary(int subdivision, int x, int z, byte bk, SampleVertexData vert)
         {
-            if (mNode is SamplerNode)
-            {
-                SamplerNode node = (SamplerNode)mNode;
-                node.AddBoundary(subdivision, x, z, bk, vert);
-            }
+            if (!(_node is SamplerNode node)) return;
+            node.AddBoundary(subdivision, x, z, bk, vert);
         }
 
         public void InitBoundary()
         {
-            for (byte flag = LBCorner; flag <= RBorder; ++flag)
+            for (var flag = LBCorner; flag <= RBorder; ++flag)
             {
                 Boundaries.Add(flag, new List<SampleVertexData>());
                 var tree = new KdTree<float, int>(2, new KdTree.Math.FloatMath());
-                BoundaryKDTree.Add(flag, tree);
+                _boundaryKdTree.Add(flag, tree);
             }
         }
 
         public void MergeBoundary(byte flag, float minDis, List<SampleVertexData> src)
         {
-            if (!Boundaries.ContainsKey(flag) || !BoundaryKDTree.ContainsKey(flag))
+            if (!Boundaries.ContainsKey(flag) || !_boundaryKdTree.ContainsKey(flag))
             {
                 Debug.LogError("the boundary need to merge not exists");
             }
 
-            var tree = BoundaryKDTree[flag];
+            var tree = _boundaryKdTree[flag];
             foreach (var vt in src)
             {
                 var nodes = tree.GetNearestNeighbours(new float[] { vt.Position.x, vt.Position.z }, 1);
@@ -327,14 +290,14 @@ namespace MightyTerrainMesh
                         continue;
                 }
 
-                tree.Add(new float[] { vt.Position.x, vt.Position.z }, 0);
+                tree.Add(new[] { vt.Position.x, vt.Position.z }, 0);
                 Boundaries[flag].Add(vt);
             }
         }
 
-        public void RunSampler(ITerrainTreeScaner scaner)
+        public void RunSampler(ITerrainTreeScanner scanner)
         {
-            mNode.RunSample(scaner);
+            _node.RunSample(scanner);
         }
 
         public void FillData(float angleErr)
@@ -344,7 +307,7 @@ namespace MightyTerrainMesh
                 CombineTree(angleErr);
             }
 
-            mNode.GetData(Vertices, Boundaries);
+            _node.GetData(Vertices, Boundaries);
         }
 
         public void StitchBorder(byte flag, byte nflag, float minDis, SamplerTree neighbour)

@@ -83,7 +83,7 @@ namespace MightyTerrainMesh
         {
             if (IsDone)
                 return;
-            Mesh[CurIdx] = new MTMeshData(CurIdx, Scanners[0].Trees[CurIdx].BND)
+            Mesh[CurIdx] = new MTMeshData(CurIdx, Scanners[0].Trees[CurIdx].Bounds)
             {
                 lods = new MTMeshData.LOD[Scanners.Length]
             };
@@ -92,8 +92,8 @@ namespace MightyTerrainMesh
                 var lodData = new MTMeshData.LOD();
                 var tree = Scanners[lod].Trees[CurIdx];
                 RunTessellation(tree.Vertices, lodData, MinTriArea);
-                lodData.uvmin = tree.uvMin;
-                lodData.uvmax = tree.uvMax;
+                lodData.uvmin = tree.UVMin;
+                lodData.uvmax = tree.UVMax;
                 Mesh[CurIdx].lods[lod] = lodData;
             }
 
@@ -136,7 +136,7 @@ namespace MightyTerrainMesh
             if (IsDone)
                 return;
             var lodLv = GetLodLv(CurIdx);
-            Mesh[CurIdx] = new MTMeshData(CurIdx, _subTrees[CurIdx].BND, lodLv)
+            Mesh[CurIdx] = new MTMeshData(CurIdx, _subTrees[CurIdx].Bounds, lodLv)
             {
                 lods = new MTMeshData.LOD[1]
             };

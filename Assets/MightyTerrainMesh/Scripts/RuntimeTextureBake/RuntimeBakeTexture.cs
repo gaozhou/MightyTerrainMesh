@@ -149,7 +149,7 @@ namespace MightyTerrainMesh
             QPool.Clear();
         }
 
-        public RuntimeBakeTexture[] Textures;
+        public IMTVirtualTexture[] Textures;
         private IMTVirtualTextureReceiver _receiver;
         private long _cmdId;
 
@@ -164,7 +164,7 @@ namespace MightyTerrainMesh
         {
             foreach (var tex in Textures)
             {
-                tex.Bake();
+                (tex as RuntimeBakeTexture)?.Bake();
             }
         }
 

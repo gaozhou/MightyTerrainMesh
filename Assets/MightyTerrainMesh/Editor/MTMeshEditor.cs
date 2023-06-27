@@ -148,7 +148,7 @@ public class MTMeshEditor : EditorWindow
             for (int i = 0; i < int.MaxValue; ++i)
             {
                 dataCreateJob.Update();
-                EditorUtility.DisplayProgressBar("creating data", "scaning volumn", dataCreateJob.progress);
+                EditorUtility.DisplayProgressBar("creating data", "scaning volumn", dataCreateJob.Progress);
                 if (dataCreateJob.IsDone)
                     break;
             }
@@ -164,7 +164,7 @@ public class MTMeshEditor : EditorWindow
             float minArea = Mathf.Max(terrainTarget.terrainData.bounds.size.x, terrainTarget.terrainData.bounds.size.z) / max_sub_grids;
             minArea = minArea * minArea / 8f;
             //
-            tessellationJob = new TessellationJob(dataCreateJob.LODs, minArea);
+            tessellationJob = new TessellationJob(dataCreateJob.Lods, minArea);
             for (int i = 0; i < int.MaxValue; ++i)
             {
                 tessellationJob.Update();

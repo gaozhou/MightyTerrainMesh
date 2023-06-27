@@ -66,37 +66,34 @@ namespace MightyTerrainMesh
 
         public TextureQuality texQuality = TextureQuality.Full;
         public int maxBakeCountPerFrame = 8;
-        private Queue<MTVTCreateCmd> qVTCreateCmds = new Queue<MTVTCreateCmd>();
+        private readonly Queue<MTVTCreateCmd> _qVTCreateCommands = new Queue<MTVTCreateCmd>();
 
-        private Dictionary<int, Queue<IMTVirtualTexture[]>> texturePools =
+        private readonly Dictionary<int, Queue<IMTVirtualTexture[]>> _texturePools =
             new Dictionary<int, Queue<IMTVirtualTexture[]>>();
 
-        private List<IMTVirtualTexture> activeTextures = new List<IMTVirtualTexture>();
-        private Queue<VTRenderJob> bakedJobs = new Queue<VTRenderJob>();
+        private readonly List<IMTVirtualTexture> _activeTextures = new List<IMTVirtualTexture>();
+        private readonly Queue<VTRenderJob> _bakedJobs = new Queue<VTRenderJob>();
 
         private RuntimeBakeTexture[] PopTexture(int size)
         {
-            var texSize = size;
-            if (texQuality == TextureQuality.Half)
+            var texSize = texQuality switch
             {
-                texSize = size >> 1;
-            }
-            else if (texQuality == TextureQuality.Quarter)
-            {
-                texSize = size >> 2;
-            }
+                TextureQuality.Half => size >> 1,
+                TextureQuality.Quarter => size >> 2,
+                _ => size
+            };
 
-            RuntimeBakeTexture[] ret = null;
-            if (!texturePools.ContainsKey(texSize))
-                texturePools.Add(texSize, new Queue<IMTVirtualTexture[]>());
-            var q = texturePools[texSize];
+            RuntimeBakeTexture[] ret;
+            if (!_texturePools.ContainsKey(texSize))
+                _texturePools.Add(texSize, new Queue<IMTVirtualTexture[]>());
+            var q = _texturePools[texSize];
             if (q.Count > 0)
             {
                 ret = q.Dequeue() as RuntimeBakeTexture[];
             }
             else
             {
-                ret = new RuntimeBakeTexture[] { new RuntimeBakeTexture(texSize), new RuntimeBakeTexture(texSize) };
+                ret = new[] { new RuntimeBakeTexture(texSize), new RuntimeBakeTexture(texSize) };
             }
 
             return ret;
@@ -104,17 +101,17 @@ namespace MightyTerrainMesh
 
         void IVTCreator.AppendCmd(MTVTCreateCmd cmd)
         {
-            qVTCreateCmds.Enqueue(cmd);
+            _qVTCreateCommands.Enqueue(cmd);
         }
 
         void IVTCreator.DisposeTextures(IMTVirtualTexture[] ts)
         {
             var size = ts[0].Size;
-            activeTextures.Remove(ts[0]);
-            activeTextures.Remove(ts[1]);
-            if (texturePools.ContainsKey(size))
+            _activeTextures.Remove(ts[0]);
+            _activeTextures.Remove(ts[1]);
+            if (_texturePools.TryGetValue(size, out var pool))
             {
-                texturePools[size].Enqueue(ts);
+                pool.Enqueue(ts);
             }
             else
             {
@@ -122,38 +119,38 @@ namespace MightyTerrainMesh
             }
         }
 
-        void OnDestroy()
+        private void OnDestroy()
         {
-            foreach (var q in texturePools.Values)
+            foreach (var q in _texturePools.Values)
             {
                 while (q.Count > 0)
                 {
-                    var rbt = q.Dequeue() as RuntimeBakeTexture[];
+                    if (!(q.Dequeue() is RuntimeBakeTexture[] rbt)) continue;
                     rbt[0].Clear();
                     rbt[1].Clear();
                 }
             }
 
-            texturePools.Clear();
+            _texturePools.Clear();
             MTVTCreateCmd.Clear();
         }
 
         // Update is called once per frame
-        void Update()
+        private void Update()
         {
-            while (bakedJobs.Count > 0)
+            while (_bakedJobs.Count > 0)
             {
-                var job = bakedJobs.Dequeue();
+                var job = _bakedJobs.Dequeue();
                 job.SendTexturesReady();
-                activeTextures.Add(job.Textures[0]);
-                activeTextures.Add(job.Textures[1]);
+                _activeTextures.Add(job.Textures[0]);
+                _activeTextures.Add(job.Textures[1]);
                 VTRenderJob.Push(job);
             }
 
-            int bakeCount = 0;
-            while (qVTCreateCmds.Count > 0 && bakeCount < maxBakeCountPerFrame)
+            var bakeCount = 0;
+            while (_qVTCreateCommands.Count > 0 && bakeCount < maxBakeCountPerFrame)
             {
-                var cmd = qVTCreateCmds.Dequeue();
+                var cmd = _qVTCreateCommands.Dequeue();
                 if (cmd.Receiver.WaitCmdId == cmd.CmdId)
                 {
                     var ts = PopTexture(cmd.Size);
@@ -162,7 +159,7 @@ namespace MightyTerrainMesh
                     var job = VTRenderJob.Pop();
                     job.Reset(cmd.CmdId, ts, cmd.Receiver);
                     job.DoJob();
-                    bakedJobs.Enqueue(job);
+                    _bakedJobs.Enqueue(job);
                     MTVTCreateCmd.Push(cmd);
                     ++bakeCount;
                 }
@@ -172,10 +169,10 @@ namespace MightyTerrainMesh
                 }
             }
 
-            for (int count = activeTextures.Count - 1; count >= 0; --count)
+            for (var count = _activeTextures.Count - 1; count >= 0; --count)
             {
-                var tex = activeTextures[count] as RuntimeBakeTexture;
-                bool needRender = tex.Validate();
+                var tex = _activeTextures[count] as RuntimeBakeTexture;
+                var needRender = tex != null && tex.Validate();
                 if (needRender)
                 {
                     tex.Bake();

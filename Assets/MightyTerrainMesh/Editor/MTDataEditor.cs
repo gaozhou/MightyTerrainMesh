@@ -102,13 +102,13 @@ public class MTDataEditor : EditorWindow
             for (int i = 0; i < int.MaxValue; ++i)
             {
                 dataCreateJob.Update();
-                EditorUtility.DisplayProgressBar("creating data", "scaning volumn", dataCreateJob.progress);
+                EditorUtility.DisplayProgressBar("creating data", "scaning volumn", dataCreateJob.Progress);
                 if (dataCreateJob.IsDone)
                     break;
             }
             dataCreateJob.EndProcess();
             //
-            tessellationJob = new TessellationDataJob(dataCreateJob.LODs, minArea);
+            tessellationJob = new TessellationDataJob(dataCreateJob.Lods, minArea);
             for (int i = 0; i < int.MaxValue; ++i)
             {
                 tessellationJob.Update();
