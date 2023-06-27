@@ -8,7 +8,7 @@ namespace MightyTerrainMesh
     public class TessellationJob
     {
         public MTMeshData[] Mesh;
-        public readonly MTTerrainScanner[] Scanners;
+        protected readonly MTTerrainScanner[] Scanners;
 
         public bool IsDone => CurIdx >= Mesh.Length;
 

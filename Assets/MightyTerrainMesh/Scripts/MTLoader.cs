@@ -128,15 +128,15 @@ namespace MightyTerrainMesh
         private void ActiveMesh(MTQuadTreeNode node)
         {
             var patch = ImtPooledRenderMesh.Pop();
-            var m = _meshPool.PopMesh(node.meshIdx);
+            var m = _meshPool.PopMesh(node.MeshIdx);
             patch.Reset(header, _vtCreator, m, transform.position);
-            _activeMeshes.Add(node.meshIdx, patch);
+            _activeMeshes.Add(node.MeshIdx, patch);
         }
 
         private void DeactivateMesh(MTQuadTreeNode node)
         {
-            var p = _activeMeshes[node.meshIdx];
-            _activeMeshes.Remove(node.meshIdx);
+            var p = _activeMeshes[node.MeshIdx];
+            _activeMeshes.Remove(node.MeshIdx);
             ImtPooledRenderMesh.Push(p);
         }
 
@@ -181,7 +181,7 @@ namespace MightyTerrainMesh
             for (var i = 0; i < _quadtree.ActiveNodes.Length; ++i)
             {
                 var node = _quadtree.ActiveNodes.Data[i];
-                var p = _activeMeshes[node.meshIdx];
+                var p = _activeMeshes[node.MeshIdx];
                 p.UpdatePatch(cullCamera.transform.position, cullCamera.fieldOfView, Screen.height,
                     Screen.width);
             }

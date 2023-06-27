@@ -233,21 +233,21 @@ public class MTDataEditor : EditorWindow
     {
         if (root != null)
         {
-            node.bnd = root.Bound;
-            node.meshIdx = root.MeshID;
-            node.lodLv = (byte)root.LODLv;
+            node.Bounds = root.Bound;
+            node.MeshIdx = root.MeshID;
+            node.LodLevel = (byte)root.LODLv;
             if (root.SubNode != null)
             {
-                node.children = new int[root.SubNode.Length];
+                node.Children = new int[root.SubNode.Length];
                 for (int i = 0; i < root.SubNode.Length; ++i)
                 {
                     var child = new MTQuadTreeNode(nodes.Count);
                     nodes.Add(child);
-                    node.children[i] = child.cellIdx;
+                    node.Children[i] = child.CellIdx;
                 }
                 for (int i = 0; i < root.SubNode.Length; ++i)
                 {
-                    var childIdx = node.children[i];
+                    var childIdx = node.Children[i];
                     ExportTree(root.SubNode[i], nodes[childIdx], nodes);
                 }
             }

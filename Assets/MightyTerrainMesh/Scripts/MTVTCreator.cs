@@ -145,8 +145,8 @@ namespace MightyTerrainMesh
             {
                 var job = bakedJobs.Dequeue();
                 job.SendTexturesReady();
-                activeTextures.Add(job.textures[0]);
-                activeTextures.Add(job.textures[1]);
+                activeTextures.Add(job.Textures[0]);
+                activeTextures.Add(job.Textures[1]);
                 VTRenderJob.Push(job);
             }
 

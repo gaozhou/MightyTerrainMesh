@@ -6,23 +6,23 @@ namespace MightyTerrainMesh
 {
     public class RuntimeBakeTexture : IMTVirtualTexture
     {
-        static Mesh s_FullscreenMesh;
+        private static Mesh _fullscreenMesh;
 
         /// <summary>
         /// Returns a mesh that you can use with <see cref="CommandBuffer.DrawMesh(Mesh, Matrix4x4, Material)"/> to render full-screen effects.
         /// </summary>
-        public static Mesh fullscreenMesh
+        private static Mesh FullscreenMesh
         {
             get
             {
-                if (s_FullscreenMesh != null)
-                    return s_FullscreenMesh;
+                if (_fullscreenMesh != null)
+                    return _fullscreenMesh;
 
-                float topV = 1.0f;
-                float bottomV = 0.0f;
+                const float topV = 1.0f;
+                const float bottomV = 0.0f;
 
-                s_FullscreenMesh = new Mesh { name = "Fullscreen Quad" };
-                s_FullscreenMesh.SetVertices(new List<Vector3>
+                _fullscreenMesh = new Mesh { name = "Fullscreen Quad" };
+                _fullscreenMesh.SetVertices(new List<Vector3>
                 {
                     new Vector3(-1.0f, -1.0f, 0.0f),
                     new Vector3(-1.0f, 1.0f, 0.0f),
@@ -30,7 +30,7 @@ namespace MightyTerrainMesh
                     new Vector3(1.0f, 1.0f, 0.0f)
                 });
 
-                s_FullscreenMesh.SetUVs(0, new List<Vector2>
+                _fullscreenMesh.SetUVs(0, new List<Vector2>
                 {
                     new Vector2(0.0f, bottomV),
                     new Vector2(0.0f, topV),
@@ -38,91 +38,80 @@ namespace MightyTerrainMesh
                     new Vector2(1.0f, topV)
                 });
 
-                s_FullscreenMesh.SetIndices(new[] { 0, 1, 2, 2, 1, 3 }, MeshTopology.Triangles, 0, false);
-                s_FullscreenMesh.UploadMeshData(true);
-                return s_FullscreenMesh;
+                _fullscreenMesh.SetIndices(new[] { 0, 1, 2, 2, 1, 3 }, MeshTopology.Triangles, 0, false);
+                _fullscreenMesh.UploadMeshData(true);
+                return _fullscreenMesh;
             }
         }
 
-        private static int _rtt_count = 0;
+        int IMTVirtualTexture.Size => _texSize;
 
-        int IMTVirtualTexture.Size
-        {
-            get { return texSize; }
-        }
+        Texture IMTVirtualTexture.Tex => RTT;
 
-        Texture IMTVirtualTexture.Tex
-        {
-            get { return RTT; }
-        }
-
-        public Material[] layers { get; private set; }
-        public RenderTexture RTT { get; private set; }
-        private int texSize = 32;
-        private Vector4 scaleOffset;
-        private CommandBuffer cmdBuffer;
+        private Material[] Layers { get; set; }
+        private RenderTexture RTT { get; set; }
+        private readonly int _texSize;
+        private Vector4 _scaleOffset;
+        private CommandBuffer _cmdBuffer;
+        private static readonly int BakeScaleOffset = Shader.PropertyToID("_BakeScaleOffset");
 
         public RuntimeBakeTexture(int size)
         {
-            texSize = size;
-            scaleOffset = new Vector4(1, 1, 0, 0);
-            cmdBuffer = new CommandBuffer();
-            cmdBuffer.name = "RuntimeBakeTexture";
+            _texSize = size;
+            _scaleOffset = new Vector4(1, 1, 0, 0);
+            _cmdBuffer = new CommandBuffer();
+            _cmdBuffer.name = "RuntimeBakeTexture";
             CreateRTT();
         }
 
         private void CreateRTT()
         {
-            var format = RenderTextureFormat.Default;
-            RTT = new RenderTexture(texSize, texSize, 0, format, RenderTextureReadWrite.Default);
-            RTT.wrapMode = TextureWrapMode.Clamp;
+            const RenderTextureFormat format = RenderTextureFormat.Default;
+            RTT = new RenderTexture(_texSize, _texSize, 0, format, RenderTextureReadWrite.Default)
+            {
+                wrapMode = TextureWrapMode.Clamp
+            };
             RTT.Create();
             RTT.DiscardContents();
-            ++_rtt_count;
-            //Debug.Log("rtt count : " + _rtt_count);
         }
 
         public void Reset(Vector2 uvMin, Vector2 uvMax, Material[] mats)
         {
-            scaleOffset.x = uvMax.x - uvMin.x;
-            scaleOffset.y = uvMax.y - uvMin.y;
-            scaleOffset.z = uvMin.x;
-            scaleOffset.w = uvMin.y;
-            layers = mats;
+            _scaleOffset.x = uvMax.x - uvMin.x;
+            _scaleOffset.y = uvMax.y - uvMin.y;
+            _scaleOffset.z = uvMin.x;
+            _scaleOffset.w = uvMin.y;
+            Layers = mats;
             Validate();
         }
 
         public void Bake()
         {
-            for (int i = 0; i < layers.Length; ++i)
+            foreach (var layer in Layers)
             {
-                layers[i].SetVector("_BakeScaleOffset", scaleOffset);
+                layer.SetVector(BakeScaleOffset, _scaleOffset);
             }
 
             RTT.DiscardContents();
-            cmdBuffer.Clear();
-            cmdBuffer.SetViewProjectionMatrices(Matrix4x4.identity, Matrix4x4.identity);
-            cmdBuffer.SetViewport(new Rect(0, 0, RTT.width, RTT.height));
-            cmdBuffer.SetRenderTarget(RTT, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
+            _cmdBuffer.Clear();
+            _cmdBuffer.SetViewProjectionMatrices(Matrix4x4.identity, Matrix4x4.identity);
+            _cmdBuffer.SetViewport(new Rect(0, 0, RTT.width, RTT.height));
+            _cmdBuffer.SetRenderTarget(RTT, RenderBufferLoadAction.DontCare, RenderBufferStoreAction.Store,
                 RenderBufferLoadAction.DontCare, RenderBufferStoreAction.DontCare);
-            for (int i = 0; i < layers.Length; ++i)
+            foreach (var layer in Layers)
             {
-                cmdBuffer.DrawMesh(fullscreenMesh, Matrix4x4.identity, layers[i]);
+                _cmdBuffer.DrawMesh(FullscreenMesh, Matrix4x4.identity, layer);
             }
 
-            Graphics.ExecuteCommandBuffer(cmdBuffer);
+            Graphics.ExecuteCommandBuffer(_cmdBuffer);
         }
 
         public bool Validate()
         {
-            if (!RTT.IsCreated())
-            {
-                RTT.Release();
-                CreateRTT();
-                return true;
-            }
-
-            return false;
+            if (RTT.IsCreated()) return false;
+            RTT.Release();
+            CreateRTT();
+            return true;
         }
 
         public void Clear()
@@ -133,62 +122,56 @@ namespace MightyTerrainMesh
                 RTT = null;
             }
 
-            layers = null;
-            cmdBuffer.Clear();
-            cmdBuffer = null;
+            Layers = null;
+            _cmdBuffer.Clear();
+            _cmdBuffer = null;
         }
     }
 
     public class VTRenderJob
     {
-        private static Queue<VTRenderJob> _qPool = new Queue<VTRenderJob>();
+        private static readonly Queue<VTRenderJob> QPool = new Queue<VTRenderJob>();
 
         public static VTRenderJob Pop()
         {
-            if (_qPool.Count > 0)
-            {
-                return _qPool.Dequeue();
-            }
-
-            return new VTRenderJob();
+            return QPool.Count > 0 ? QPool.Dequeue() : new VTRenderJob();
         }
 
         public static void Push(VTRenderJob p)
         {
-            p.textures = null;
-            p.receiver = null;
-            _qPool.Enqueue(p);
+            p.Textures = null;
+            p._receiver = null;
+            QPool.Enqueue(p);
         }
 
         public static void Clear()
         {
-            _qPool.Clear();
+            QPool.Clear();
         }
 
-        public RuntimeBakeTexture[] textures;
-        private IMTVirtualTextureReceiver receiver;
-        private long cmdId = 0;
+        public RuntimeBakeTexture[] Textures;
+        private IMTVirtualTextureReceiver _receiver;
+        private long _cmdId;
 
         public void Reset(long cmd, RuntimeBakeTexture[] ts, IMTVirtualTextureReceiver r)
         {
-            cmdId = cmd;
-            textures = ts;
-            receiver = r;
+            _cmdId = cmd;
+            Textures = ts;
+            _receiver = r;
         }
 
         public void DoJob()
         {
-            for (int i = 0; i < textures.Length; ++i)
+            foreach (var tex in Textures)
             {
-                var tex = textures[i];
                 tex.Bake();
             }
         }
 
         public void SendTexturesReady()
         {
-            receiver.OnTextureReady(cmdId, textures);
-            receiver = null;
+            _receiver.OnTextureReady(_cmdId, Textures);
+            _receiver = null;
         }
     }
 }
