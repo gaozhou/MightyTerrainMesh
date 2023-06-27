@@ -51,6 +51,8 @@ namespace MightyTerrainMesh
         private long _waitBackCmdId;
 
         private MTVTCreateCmd _lastPendingCreateCmd;
+        private static readonly int Diffuse = Shader.PropertyToID("_Diffuse");
+        private static readonly int Normal = Shader.PropertyToID("_Normal");
 
         //
         private ImtPooledRenderMesh()
@@ -96,8 +98,8 @@ namespace MightyTerrainMesh
 
         private void OnPushBackPool()
         {
-            _mMats[0].SetTexture("_Diffuse", null);
-            _mMats[0].SetTexture("_Normal", null);
+            _mMats[0].SetTexture(Diffuse, null);
+            _mMats[0].SetTexture(Normal, null);
             if (_mGo != null)
                 _mGo.SetActive(false);
             if (_mTextures != null)
@@ -159,12 +161,12 @@ namespace MightyTerrainMesh
             var size = _mRm.UVMax - _mRm.UVMin;
             var scale = new Vector2(1f / size.x, 1f / size.y);
             var offset = -new Vector2(scale.x * _mRm.UVMin.x, scale.y * _mRm.UVMin.y);
-            _mMats[0].SetTexture("_Diffuse", _mTextures[0].Tex);
-            _mMats[0].SetTextureScale("_Diffuse", scale);
-            _mMats[0].SetTextureOffset("_Diffuse", offset);
-            _mMats[0].SetTexture("_Normal", _mTextures[1].Tex);
-            _mMats[0].SetTextureScale("_Normal", scale);
-            _mMats[0].SetTextureOffset("_Normal", offset);
+            _mMats[0].SetTexture(Diffuse, _mTextures[0].Tex);
+            _mMats[0].SetTextureScale(Diffuse, scale);
+            _mMats[0].SetTextureOffset(Diffuse, offset);
+            _mMats[0].SetTexture(Normal, _mTextures[1].Tex);
+            _mMats[0].SetTextureScale(Normal, scale);
+            _mMats[0].SetTextureOffset(Normal, offset);
         }
 
         long IMTVirtualTextureReceiver.WaitCmdId => _waitBackCmdId;
