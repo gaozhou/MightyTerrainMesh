@@ -1,9 +1,8 @@
+using UnityEngine;
+using System.Collections.Generic;
+
 namespace MightyTerrainMesh
 {
-    using System.Collections;
-    using System.Collections.Generic;
-    using UnityEngine;
-    
     public interface IMTWaterHeightProvider
     {
         bool Contains(Vector3 worldPos);
@@ -12,28 +11,29 @@ namespace MightyTerrainMesh
 
     public class MTWaterHeight
     {
-        private static List<IMTWaterHeightProvider> providers = new List<IMTWaterHeightProvider>();
+        private static readonly List<IMTWaterHeightProvider> Providers = new List<IMTWaterHeightProvider>();
+
         public static void RegProvider(IMTWaterHeightProvider provider)
         {
-            providers.Add(provider);
+            Providers.Add(provider);
         }
-        public static void UnregProvider(IMTWaterHeightProvider provider)
+
+        public static void UnRegProvider(IMTWaterHeightProvider provider)
         {
-            providers.Remove(provider);
+            Providers.Remove(provider);
         }
+
         public static float GetWaterHeight(Vector3 groundWorldPos)
         {
-            float h = groundWorldPos.y;
-            for(int i=0; i<providers.Count; ++i)
+            var h = groundWorldPos.y;
+            foreach (var water in Providers)
             {
-                var water = providers[i];
-                if (water.Contains(groundWorldPos))
-                {
-                    float wh = water.GetHeight(groundWorldPos);
-                    if (wh > h)
-                        return wh;
-                }
+                if (!water.Contains(groundWorldPos)) continue;
+                var wh = water.GetHeight(groundWorldPos);
+                if (wh > h)
+                    return wh;
             }
+
             return h;
         }
     }

@@ -1,133 +1,136 @@
-﻿namespace MightyTerrainMesh
+﻿using UnityEngine;
+using System.Collections.Generic;
+
+namespace MightyTerrainMesh
 {
-    using System.Collections;
-    using System.Collections.Generic;
-    using UnityEngine;
-    
     public class MTHeightMap
     {
         //static interface
-        private static Dictionary<uint, MTHeightMap> _dictMaps = new Dictionary<uint, MTHeightMap>();
+        private static readonly Dictionary<uint, MTHeightMap> DictMaps = new Dictionary<uint, MTHeightMap>();
         private static int _mapWidth = 512;
         private static int _mapHeight = 512;
-        private static float _half_range = 0;
-        public static uint FormatId(Vector3 pos)
+        private static float _halfRange;
+
+        private static uint FormatId(Vector3 pos)
         {
             //transform to (0 ~ short.MaxValue * _mapWidth)
-            int x = Mathf.CeilToInt(pos.x + _half_range) / _mapWidth;
-            int y = Mathf.CeilToInt(pos.z + _half_range) / _mapHeight;
-            uint id = (uint)x;
+            var x = Mathf.CeilToInt(pos.x + _halfRange) / _mapWidth;
+            var y = Mathf.CeilToInt(pos.z + _halfRange) / _mapHeight;
+            var id = (uint)x;
             id = (id << 16) | (uint)y;
             return id;
         }
-        public static void RegisterMap(MTHeightMap map)
+
+        private static void RegisterMap(MTHeightMap map)
         {
-            var width = Mathf.FloorToInt(map.BND.size.x);
-            var height = Mathf.FloorToInt(map.BND.size.z);
-            if (_dictMaps.Count == 0)
+            var width = Mathf.FloorToInt(map.Bounds.size.x);
+            var height = Mathf.FloorToInt(map.Bounds.size.z);
+            if (DictMaps.Count == 0)
             {
                 _mapWidth = width;
                 _mapHeight = height;
-                _half_range = Mathf.Max(_mapWidth, _mapHeight) * short.MaxValue;
+                _halfRange = Mathf.Max(_mapWidth, _mapHeight) * short.MaxValue;
             }
+
             if (_mapWidth != width || _mapHeight != height)
             {
-                Debug.LogError(string.Format("height map size is not valid : {0}, {1}", width, height));
+                Debug.LogError($"height map size is not valid : {width}, {height}");
                 return;
             }
-            uint id = FormatId(map.BND.min);
+
+            var id = FormatId(map.Bounds.min);
             //Debug.Log(map.BND.min + ", " + id);
-            if (_dictMaps.ContainsKey(id))
+            if (DictMaps.ContainsKey(id))
             {
-                Debug.LogError(string.Format("height map id overlapped : {0}, {1}", map.BND.min.x, map.BND.min.z));
+                Debug.LogError($"height map id overlapped : {map.Bounds.min.x}, {map.Bounds.min.z}");
                 return;
             }
-            _dictMaps.Add(id, map);
+
+            DictMaps.Add(id, map);
         }
+
         public static void UnregisterMap(MTHeightMap map)
         {
-            uint id = FormatId(map.BND.min);
-            if (!_dictMaps.ContainsKey(id))
+            var id = FormatId(map.Bounds.min);
+            if (!DictMaps.ContainsKey(id))
             {
-                Debug.LogError(string.Format("height map not exist : {0}, {1}", map.BND.center.x, map.BND.center.z));
+                Debug.LogError($"height map not exist : {map.Bounds.center.x}, {map.Bounds.center.z}");
                 return;
             }
-            _dictMaps.Remove(id);
+
+            DictMaps.Remove(id);
         }
+
         public static bool GetHeightInterpolated(Vector3 pos, ref float h)
         {
-            uint id = FormatId(pos);
-            if (_dictMaps.ContainsKey(id))
-            {
-                return _dictMaps[id].GetInterpolatedHeight(pos, ref h);
-            }
-            return false;
+            var id = FormatId(pos);
+            return DictMaps.ContainsKey(id) && DictMaps[id].GetInterpolatedHeight(pos, ref h);
         }
+
         public static bool GetHeightSimple(Vector3 pos, ref float h)
         {
-            uint id = FormatId(pos);
-            if (_dictMaps.ContainsKey(id))
-            {
-                return _dictMaps[id].GetHeight(pos, ref h);
-            }
-            return false;
+            var id = FormatId(pos);
+            return DictMaps.TryGetValue(id, out var map) && map.GetHeight(pos, ref h);
         }
-        public Bounds BND { get; private set; }
-        private int heightResolusion = 513;
-        private byte[] heights;
-        private Vector3 heightScale;
-        public MTHeightMap(Bounds bnd, int resolution, Vector3 scale, byte[] data)
+
+        private Bounds Bounds { get; }
+        private readonly int _heightResolution;
+        private readonly byte[] _heights;
+        private readonly Vector3 _heightScale;
+
+        public MTHeightMap(Bounds bounds, int resolution, Vector3 scale, byte[] data)
         {
-            BND = bnd;
-            heightResolusion = resolution;
-            heightScale = scale;
-            heights = data;
+            Bounds = bounds;
+            _heightResolution = resolution;
+            _heightScale = scale;
+            _heights = data;
             RegisterMap(this);
         }
+
         private float SampleHeightMapData(int x, int y)
         {
-            int idx = y * heightResolusion * 2 + x * 2;
-            byte h = heights[idx];
-            byte l = heights[idx + 1];
+            var idx = y * _heightResolution * 2 + x * 2;
+            var h = _heights[idx];
+            var l = _heights[idx + 1];
             return h + l / 255f;
         }
+
         private float GetInterpolatedHeightVal(Vector3 pos)
         {
-            var local_x = Mathf.Clamp01((pos.x - BND.min.x) / BND.size.x) * (heightResolusion - 1);
-            var local_y = Mathf.Clamp01((pos.z - BND.min.z) / BND.size.z) * (heightResolusion - 1);
-            int x = Mathf.FloorToInt(local_x);
-            int y = Mathf.FloorToInt(local_y);
-            float tx = local_x - x;
-            float ty = local_y - y;
-            float y00 = SampleHeightMapData(x, y);
-            float y10 = SampleHeightMapData(x + 1, y);
-            float y01 = SampleHeightMapData(x, y + 1);
-            float y11 = SampleHeightMapData(x + 1, y + 1);
+            var localX = Mathf.Clamp01((pos.x - Bounds.min.x) / Bounds.size.x) * (_heightResolution - 1);
+            var localY = Mathf.Clamp01((pos.z - Bounds.min.z) / Bounds.size.z) * (_heightResolution - 1);
+            var x = Mathf.FloorToInt(localX);
+            var y = Mathf.FloorToInt(localY);
+            var tx = localX - x;
+            var ty = localY - y;
+            var y00 = SampleHeightMapData(x, y);
+            var y10 = SampleHeightMapData(x + 1, y);
+            var y01 = SampleHeightMapData(x, y + 1);
+            var y11 = SampleHeightMapData(x + 1, y + 1);
             return Mathf.Lerp(Mathf.Lerp(y00, y10, tx), Mathf.Lerp(y01, y11, tx), ty);
         }
-        public bool GetInterpolatedHeight(Vector3 pos, ref float h)
+
+        private bool GetInterpolatedHeight(Vector3 pos, ref float h)
         {
             var checkPos = pos;
-            checkPos.y = BND.center.y;
-            if (!BND.Contains(checkPos))
+            checkPos.y = Bounds.center.y;
+            if (!Bounds.Contains(checkPos))
                 return false;
-            float val = GetInterpolatedHeightVal(pos);
-            h = val * heightScale.y / 255f + BND.min.y;
+            var val = GetInterpolatedHeightVal(pos);
+            h = val * _heightScale.y / 255f + Bounds.min.y;
             return true;
         }
-        public bool GetHeight(Vector3 pos, ref float h)
+
+        private bool GetHeight(Vector3 pos, ref float h)
         {
-            var local_x = pos.x - BND.min.x;
-            var local_y = pos.z - BND.min.z;
-            int x = Mathf.FloorToInt(local_x);
-            int y = Mathf.FloorToInt(local_y);
-            if (x >= 0 && x < heightResolusion && y >= 0 && y < heightResolusion)
-            {
-                float val = SampleHeightMapData(x, y) * heightScale.y / 255f;
-                h = val + BND.min.y;
-                return true;
-            }
-            return false;
+            var localX = pos.x - Bounds.min.x;
+            var localY = pos.z - Bounds.min.z;
+            var x = Mathf.FloorToInt(localX);
+            var y = Mathf.FloorToInt(localY);
+            if (x < 0 || x >= _heightResolution || y < 0 || y >= _heightResolution) return false;
+            var val = SampleHeightMapData(x, y) * _heightScale.y / 255f;
+            h = val + Bounds.min.y;
+            return true;
         }
     }
 }

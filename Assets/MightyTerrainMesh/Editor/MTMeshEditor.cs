@@ -168,7 +168,7 @@ public class MTMeshEditor : EditorWindow
             for (int i = 0; i < int.MaxValue; ++i)
             {
                 tessellationJob.Update();
-                EditorUtility.DisplayProgressBar("creating data", "tessellation", tessellationJob.progress);
+                EditorUtility.DisplayProgressBar("creating data", "tessellation", tessellationJob.Progress);
                 if (tessellationJob.IsDone)
                     break;
             }
@@ -180,10 +180,10 @@ public class MTMeshEditor : EditorWindow
             }
             //save meshes
             List<MeshPrefabBaker> bakers = new List<MeshPrefabBaker>();
-            for (int i = 0; i < tessellationJob.mesh.Length; ++i)
+            for (int i = 0; i < tessellationJob.Mesh.Length; ++i)
             {
-                EditorUtility.DisplayProgressBar("saving data", "processing", (float)i / tessellationJob.mesh.Length);
-                MTMeshData data = tessellationJob.mesh[i];
+                EditorUtility.DisplayProgressBar("saving data", "processing", (float)i / tessellationJob.Mesh.Length);
+                MTMeshData data = tessellationJob.Mesh[i];
                 for (int lod = 0; lod < data.lods.Length; ++lod)
                 {
                     var folder = lodFolder[lod];

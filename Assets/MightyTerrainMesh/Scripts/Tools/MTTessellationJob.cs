@@ -1,56 +1,51 @@
-﻿namespace MightyTerrainMesh
+﻿using System.Collections.Generic;
+using UnityEngine;
+using TriangleNet.Geometry;
+
+namespace MightyTerrainMesh
 {
-    using System.Collections;
-    using System.Collections.Generic;
-    using UnityEngine;
-    using TriangleNet.Geometry;
     //
     public class TessellationJob
     {
-        public MTMeshData[] mesh;
-        public MTTerrainScanner[] scanners;
-        public bool IsDone
-        {
-            get
-            {
-                return curIdx >= mesh.Length;
-            }
-        }
-        public float progress
-        {
-            get
-            {
-                return (float)(curIdx / (float)(mesh.Length));
-            }
-        }
+        public MTMeshData[] Mesh;
+        public readonly MTTerrainScanner[] Scanners;
+
+        public bool IsDone => CurIdx >= Mesh.Length;
+
+        public float Progress => CurIdx / (float)Mesh.Length;
+
         public TessellationJob(MTTerrainScanner[] s, float minTriArea)
         {
-            scanners = s;
+            Scanners = s;
             MinTriArea = minTriArea;
-            mesh = new MTMeshData[scanners[0].Trees.Length];
+            Mesh = new MTMeshData[Scanners[0].Trees.Length];
         }
-        public float MinTriArea { get; private set; }
-        protected int curIdx = 0;
+
+        protected float MinTriArea { get; }
+        protected int CurIdx;
+
         protected void RunTessellation(List<SampleVertexData> lVerts, MTMeshData.LOD lod, float minTriArea)
         {
             if (lVerts.Count < 3)
             {
-                ++curIdx;
+                ++CurIdx;
                 return;
             }
-            InputGeometry geometry = new InputGeometry();
-            for (int i = 0; i < lVerts.Count; i++)
+
+            var geometry = new InputGeometry();
+            foreach (var vert in lVerts)
             {
-                var vert = lVerts[i];
-                geometry.AddPoint(vert.Position.x, lVerts[i].Position.z, 0);
+                geometry.AddPoint(vert.Position.x, vert.Position.z, 0);
             }
-            TriangleNet.Mesh meshRepresentation = new TriangleNet.Mesh();
+
+            var meshRepresentation = new TriangleNet.Mesh();
             meshRepresentation.Triangulate(geometry);
             if (meshRepresentation.Vertices.Count != lVerts.Count)
             {
                 Debug.LogError("trianglate seems failed");
             }
-            int vIdx = 0;
+
+            var vIdx = 0;
             lod.vertices = new Vector3[meshRepresentation.Vertices.Count];
             lod.normals = new Vector3[meshRepresentation.Vertices.Count];
             lod.uvs = new Vector2[meshRepresentation.Vertices.Count];
@@ -63,15 +58,19 @@
                 lod.uvs[vIdx] = uv;
                 ++vIdx;
             }
+
             vIdx = 0;
             foreach (var t in meshRepresentation.triangles.Values)
             {
-                var p = new Vector2[] { new Vector2(lod.vertices[t.P0].x, lod.vertices[t.P0].z),
+                var p = new[]
+                {
+                    new Vector2(lod.vertices[t.P0].x, lod.vertices[t.P0].z),
                     new Vector2(lod.vertices[t.P1].x, lod.vertices[t.P1].z),
-                    new Vector2(lod.vertices[t.P2].x, lod.vertices[t.P2].z)};
-                var triarea = UnityEngine.Mathf.Abs((p[2].x - p[0].x) * (p[1].y - p[0].y) -
-                       (p[1].x - p[0].x) * (p[2].y - p[0].y)) / 2.0f;
-                if (triarea < minTriArea)
+                    new Vector2(lod.vertices[t.P2].x, lod.vertices[t.P2].z)
+                };
+                var triArea = Mathf.Abs((p[2].x - p[0].x) * (p[1].y - p[0].y) -
+                                        (p[1].x - p[0].x) * (p[2].y - p[0].y)) / 2.0f;
+                if (triArea < minTriArea)
                     continue;
                 lod.faces[vIdx] = t.P2;
                 lod.faces[vIdx + 1] = t.P1;
@@ -79,63 +78,74 @@
                 vIdx += 3;
             }
         }
+
         public virtual void Update()
         {
             if (IsDone)
                 return;
-            mesh[curIdx] = new MTMeshData(curIdx, scanners[0].Trees[curIdx].BND);
-            mesh[curIdx].lods = new MTMeshData.LOD[scanners.Length];
-            for (int lod = 0; lod < scanners.Length; ++lod)
+            Mesh[CurIdx] = new MTMeshData(CurIdx, Scanners[0].Trees[CurIdx].BND)
+            {
+                lods = new MTMeshData.LOD[Scanners.Length]
+            };
+            for (var lod = 0; lod < Scanners.Length; ++lod)
             {
                 var lodData = new MTMeshData.LOD();
-                var tree = scanners[lod].Trees[curIdx];
+                var tree = Scanners[lod].Trees[CurIdx];
                 RunTessellation(tree.Vertices, lodData, MinTriArea);
                 lodData.uvmin = tree.uvMin;
                 lodData.uvmax = tree.uvMax;
-                mesh[curIdx].lods[lod] = lodData;
+                Mesh[CurIdx].lods[lod] = lodData;
             }
+
             //update idx
-            ++curIdx;
+            ++CurIdx;
         }
     }
 
     public class TessellationDataJob : TessellationJob
     {
-        List<SamplerTree> subTrees = new List<SamplerTree>();
-        List<int> lodLvArr = new List<int>();
+        private readonly List<SamplerTree> _subTrees = new List<SamplerTree>();
+        private readonly List<int> _lodLvArr = new List<int>();
+
         public TessellationDataJob(MTTerrainScanner[] s, float minTriArea) : base(s, minTriArea)
         {
-            int totalLen = 0;
-            foreach(var scaner in scanners)
+            var totalLen = 0;
+            foreach (var scanner in Scanners)
             {
-                totalLen += scaner.Trees.Length;
-                lodLvArr.Add(totalLen);
-                subTrees.AddRange(scaner.Trees);
+                totalLen += scanner.Trees.Length;
+                _lodLvArr.Add(totalLen);
+                _subTrees.AddRange(scanner.Trees);
             }
-            mesh = new MTMeshData[subTrees.Count];
+
+            Mesh = new MTMeshData[_subTrees.Count];
         }
+
         private int GetLodLv(int idx)
         {
-            for(int i=0; i<lodLvArr.Count; ++i)
+            for (var i = 0; i < _lodLvArr.Count; ++i)
             {
-                if (idx < lodLvArr[i])
+                if (idx < _lodLvArr[i])
                     return i;
             }
+
             return 0;
         }
+
         public override void Update()
         {
             if (IsDone)
                 return;
-            var lodLv = GetLodLv(curIdx);
-            mesh[curIdx] = new MTMeshData(curIdx, subTrees[curIdx].BND, lodLv);
-            mesh[curIdx].lods = new MTMeshData.LOD[1];
+            var lodLv = GetLodLv(CurIdx);
+            Mesh[CurIdx] = new MTMeshData(CurIdx, _subTrees[CurIdx].BND, lodLv)
+            {
+                lods = new MTMeshData.LOD[1]
+            };
             var lodData = new MTMeshData.LOD();
-            var tree = subTrees[curIdx];
+            var tree = _subTrees[CurIdx];
             RunTessellation(tree.Vertices, lodData, MinTriArea);
-            mesh[curIdx].lods[0] = lodData;
+            Mesh[CurIdx].lods[0] = lodData;
             //update idx
-            ++curIdx;
+            ++CurIdx;
         }
     }
 }

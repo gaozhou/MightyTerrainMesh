@@ -1,220 +1,235 @@
-﻿namespace MightyTerrainMesh
-{
-    using System;
-    using System.IO;
-    using System.Collections.Generic;
-    using UnityEngine;
+﻿using UnityEngine;
+using System.Collections.Generic;
 
-    public interface IMTVirtualTexutreReceiver
+namespace MightyTerrainMesh
+{
+    public interface IMTVirtualTextureReceiver
     {
         long WaitCmdId { get; }
         void OnTextureReady(long cmdId, IMTVirtualTexture[] textures);
     }
 
-    public class MTPooledRenderMesh : IMTVirtualTexutreReceiver
+    public class ImtPooledRenderMesh : IMTVirtualTextureReceiver
     {
-        private static Queue<MTPooledRenderMesh> _qPool = new Queue<MTPooledRenderMesh>();
-        public static MTPooledRenderMesh Pop()
+        private static readonly Queue<ImtPooledRenderMesh> QPool = new Queue<ImtPooledRenderMesh>();
+
+        public static ImtPooledRenderMesh Pop()
         {
-            if (_qPool.Count > 0)
-            {
-                return _qPool.Dequeue();
-            }
-            return new MTPooledRenderMesh();
+            return QPool.Count > 0 ? QPool.Dequeue() : new ImtPooledRenderMesh();
         }
-        public static void Push(MTPooledRenderMesh p)
+
+        public static void Push(ImtPooledRenderMesh p)
         {
             p.OnPushBackPool();
-            _qPool.Enqueue(p);
+            QPool.Enqueue(p);
         }
+
         public static void Clear()
         {
-            while (_qPool.Count > 0)
+            while (QPool.Count > 0)
             {
-                _qPool.Dequeue().DestroySelf();
+                QPool.Dequeue().DestroySelf();
             }
         }
-        private MTData mDataHeader;
-        private MTRenderMesh mRM;
-        private GameObject mGo;
-        private MeshFilter mMesh;
-        private MeshRenderer mRenderer;
-        private Material[] mMats;
-        private IVTCreator mVTCreator;
-        private float mDiameter = 0;
-        private Vector3 mCenter = Vector3.zero;
-        private int mTextureSize = -1;
+
+        private MTData _mDataHeader;
+        private MTRenderMesh _mRm;
+        private GameObject _mGo;
+        private MeshFilter _mMesh;
+        private readonly MeshRenderer _mRenderer;
+        private Material[] _mMats;
+        private IVTCreator _mVTCreator;
+        private float _mDiameter;
+        private Vector3 _mCenter = Vector3.zero;
+
+        private int _mTextureSize = -1;
+
         //this is the texture for rendering, till the baking texture ready, this can be push back to pool
-        private IMTVirtualTexture[] mTextures;
+        private IMTVirtualTexture[] _mTextures;
+
         //baking parameters
-        private long waitBackCmdId = 0;
-        private MTVTCreateCmd lastPendingCreateCmd;
+        private long _waitBackCmdId;
+
+        private MTVTCreateCmd _lastPendingCreateCmd;
+
         //
-        public MTPooledRenderMesh()
+        private ImtPooledRenderMesh()
         {
-            mGo = new GameObject("_mtpatch");
-            mMesh = mGo.AddComponent<MeshFilter>();
-            mRenderer = mGo.AddComponent<MeshRenderer>();
-            mRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            _mGo = new GameObject("_mtpatch");
+            _mMesh = _mGo.AddComponent<MeshFilter>();
+            _mRenderer = _mGo.AddComponent<MeshRenderer>();
+            _mRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
+
         public void Reset(MTData header, IVTCreator vtCreator, MTRenderMesh m, Vector3 offset)
         {
-            mDataHeader = header;
-            mVTCreator = vtCreator;
-            mRM = m;
-            mGo.SetActive(true);
-            mGo.transform.position = offset;
+            _mDataHeader = header;
+            _mVTCreator = vtCreator;
+            _mRm = m;
+            _mGo.SetActive(true);
+            _mGo.transform.position = offset;
             //mesh and material
-            mMesh.mesh = mRM.mesh;
-            if (mMats == null)
+            _mMesh.mesh = _mRm.Mesh;
+            if (_mMats == null)
             {
-                mMats = new Material[1];
-                mMats[0] = GameObject.Instantiate(mDataHeader.BakedMat);
+                _mMats = new Material[1];
+                _mMats[0] = Object.Instantiate(_mDataHeader.BakedMat);
             }
+
             ClearRendererMaterial();
-            mRenderer.materials = mDataHeader.DetailMats;
+            _mRenderer.materials = _mDataHeader.DetailMats;
             //
-            mDiameter = mRM.mesh.bounds.size.magnitude;
-            mCenter = mRM.mesh.bounds.center + offset;
-            mTextureSize = -1;
-            waitBackCmdId = 0;
+            _mDiameter = _mRm.Mesh.bounds.size.magnitude;
+            _mCenter = _mRm.Mesh.bounds.center + offset;
+            _mTextureSize = -1;
+            _waitBackCmdId = 0;
         }
+
         private void ClearRendererMaterial()
         {
-            if (mRenderer != null && mRenderer.materials != null)
+            if (_mRenderer == null || _mRenderer.materials == null) return;
+            foreach (var mat in _mRenderer.materials)
             {
-                for(int i=0; i<mRenderer.materials.Length; ++i)
-                {
-                    var mat = mRenderer.materials[i];
-                    GameObject.Destroy(mat);
-                }
+                Object.Destroy(mat);
             }
         }
-        public void OnPushBackPool()
+
+        private void OnPushBackPool()
         {
-            mMats[0].SetTexture("_Diffuse", null);
-            mMats[0].SetTexture("_Normal", null);
-            if (mGo != null)
-                mGo.SetActive(false);
-            if (mTextures != null)
+            _mMats[0].SetTexture("_Diffuse", null);
+            _mMats[0].SetTexture("_Normal", null);
+            if (_mGo != null)
+                _mGo.SetActive(false);
+            if (_mTextures != null)
             {
-                mVTCreator.DisposeTextures(mTextures);
-                mTextures = null;
+                _mVTCreator.DisposeTextures(_mTextures);
+                _mTextures = null;
             }
-            waitBackCmdId = 0;
-            if (lastPendingCreateCmd != null)
+
+            _waitBackCmdId = 0;
+            if (_lastPendingCreateCmd != null)
             {
-                MTVTCreateCmd.Push(lastPendingCreateCmd);
-                lastPendingCreateCmd = null;
+                MTVTCreateCmd.Push(_lastPendingCreateCmd);
+                _lastPendingCreateCmd = null;
             }
-            mTextureSize = -1;
-            mRM = null;
+
+            _mTextureSize = -1;
+            _mRm = null;
         }
+
         private int CalculateTextureSize(Vector3 viewCenter, float fov, float screenH)
         {
-            float distance = Vector3.Distance(viewCenter, mCenter);
-            float pixelSize = (mDiameter * Mathf.Rad2Deg * screenH) / (distance * fov);
+            var distance = Vector3.Distance(viewCenter, _mCenter);
+            var pixelSize = (_mDiameter * Mathf.Rad2Deg * screenH) / (distance * fov);
             return Mathf.NextPowerOfTwo(Mathf.FloorToInt(pixelSize));
         }
+
         private void RequestTexture(int size)
         {
             size = Mathf.Clamp(size, 128, 2048);
             //use size to fixed the render texture format, otherwise the texture will always receate
-            if (size != mTextureSize)
+            if (size == _mTextureSize) return;
+            _mTextureSize = size;
+            var cmd = MTVTCreateCmd.Pop();
+            cmd.CmdId = MTVTCreateCmd.GenerateID();
+            cmd.Size = size;
+            cmd.UVMin = _mRm.UVMin;
+            cmd.UVMax = _mRm.UVMax;
+            cmd.BakeDiffuse = _mDataHeader.BakeDiffuseMats;
+            cmd.BakeNormal = _mDataHeader.BakeNormalMats;
+            cmd.Receiver = this;
+            if (_waitBackCmdId > 0)
             {
-                mTextureSize = size;
-                var cmd = MTVTCreateCmd.Pop();
-                cmd.cmdId = MTVTCreateCmd.GenerateID();
-                cmd.size = size;
-                cmd.uvMin = mRM.uvmin;
-                cmd.uvMax = mRM.uvmax;
-                cmd.BakeDiffuse = mDataHeader.BakeDiffuseMats;
-                cmd.BakeNormal = mDataHeader.BakeNormalMats;
-                cmd.receiver = this;
-                if (waitBackCmdId > 0)
+                if (_lastPendingCreateCmd != null)
                 {
-                    if (lastPendingCreateCmd != null)
-                    {
-                        MTVTCreateCmd.Push(lastPendingCreateCmd);
-                    }
-                    lastPendingCreateCmd = cmd;
+                    MTVTCreateCmd.Push(_lastPendingCreateCmd);
                 }
-                else
-                {
-                    waitBackCmdId = cmd.cmdId;
-                    mVTCreator.AppendCmd(cmd);
-                }
+
+                _lastPendingCreateCmd = cmd;
+            }
+            else
+            {
+                _waitBackCmdId = cmd.CmdId;
+                _mVTCreator.AppendCmd(cmd);
             }
         }
+
         private void ApplyTextures()
         {
-            Vector2 size = mRM.uvmax - mRM.uvmin;
+            var size = _mRm.UVMax - _mRm.UVMin;
             var scale = new Vector2(1f / size.x, 1f / size.y);
-            var offset = -new Vector2(scale.x * mRM.uvmin.x, scale.y * mRM.uvmin.y);
-            mMats[0].SetTexture("_Diffuse", mTextures[0].Tex);
-            mMats[0].SetTextureScale("_Diffuse", scale);
-            mMats[0].SetTextureOffset("_Diffuse", offset);
-            mMats[0].SetTexture("_Normal", mTextures[1].Tex);
-            mMats[0].SetTextureScale("_Normal", scale);
-            mMats[0].SetTextureOffset("_Normal", offset);
+            var offset = -new Vector2(scale.x * _mRm.UVMin.x, scale.y * _mRm.UVMin.y);
+            _mMats[0].SetTexture("_Diffuse", _mTextures[0].Tex);
+            _mMats[0].SetTextureScale("_Diffuse", scale);
+            _mMats[0].SetTextureOffset("_Diffuse", offset);
+            _mMats[0].SetTexture("_Normal", _mTextures[1].Tex);
+            _mMats[0].SetTextureScale("_Normal", scale);
+            _mMats[0].SetTextureOffset("_Normal", offset);
         }
-        long IMTVirtualTexutreReceiver.WaitCmdId { get { return waitBackCmdId; } }
-        void IMTVirtualTexutreReceiver.OnTextureReady(long cmdId, IMTVirtualTexture[] textures)
+
+        long IMTVirtualTextureReceiver.WaitCmdId => _waitBackCmdId;
+
+        void IMTVirtualTextureReceiver.OnTextureReady(long cmdId, IMTVirtualTexture[] textures)
         {
-            if (mRM == null || cmdId != waitBackCmdId)
+            if (_mRm == null || cmdId != _waitBackCmdId)
             {
-                mVTCreator.DisposeTextures(textures);
+                _mVTCreator.DisposeTextures(textures);
                 return;
             }
-            if (mTextures != null)
+
+            if (_mTextures != null)
             {
-                mVTCreator.DisposeTextures(mTextures);
-                mTextures = null;
+                _mVTCreator.DisposeTextures(_mTextures);
+                _mTextures = null;
             }
-            mTextures = textures;
+
+            _mTextures = textures;
             ApplyTextures();
             ClearRendererMaterial();
-            mRenderer.materials = mMats;
-            waitBackCmdId = 0;
-            if (lastPendingCreateCmd != null)
-            {
-                waitBackCmdId = lastPendingCreateCmd.cmdId;
-                mVTCreator.AppendCmd(lastPendingCreateCmd);
-                lastPendingCreateCmd = null;
-            }
+            _mRenderer.materials = _mMats;
+            _waitBackCmdId = 0;
+            if (_lastPendingCreateCmd == null) return;
+            _waitBackCmdId = _lastPendingCreateCmd.CmdId;
+            _mVTCreator.AppendCmd(_lastPendingCreateCmd);
+            _lastPendingCreateCmd = null;
         }
+
         private void DestroySelf()
         {
             ClearRendererMaterial();
-            if (mMats != null)
+            if (_mMats != null)
             {
-                foreach(var m in mMats)
-                    GameObject.Destroy(m);
+                foreach (var m in _mMats)
+                    Object.Destroy(m);
             }
-            mMats = null;
-            if (mGo != null)
-                MonoBehaviour.Destroy(mGo);
-            mGo = null;
-            mMesh = null;
+
+            _mMats = null;
+            if (_mGo != null)
+                Object.Destroy(_mGo);
+            _mGo = null;
+            _mMesh = null;
         }
+
         public void UpdatePatch(Vector3 viewCenter, float fov, float screenH, float screenW)
         {
-            int curTexSize = CalculateTextureSize(viewCenter, fov, screenH);
-            if (curTexSize != mTextureSize)
+            var curTexSize = CalculateTextureSize(viewCenter, fov, screenH);
+            if (curTexSize != _mTextureSize)
             {
                 RequestTexture(curTexSize);
             }
         }
     }
+
     public class MTRenderMesh
     {
-        public Mesh mesh;
-        public Vector2 uvmin;
-        public Vector2 uvmax;
+        public Mesh Mesh;
+        public Vector2 UVMin;
+        public Vector2 UVMax;
+
         public void Clear()
         {
-            MonoBehaviour.Destroy(mesh);
-            mesh = null;
+            Object.Destroy(Mesh);
+            Mesh = null;
         }
     }
 }

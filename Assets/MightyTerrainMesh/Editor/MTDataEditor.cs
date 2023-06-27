@@ -112,7 +112,7 @@ public class MTDataEditor : EditorWindow
             for (int i = 0; i < int.MaxValue; ++i)
             {
                 tessellationJob.Update();
-                EditorUtility.DisplayProgressBar("creating data", "tessellation", tessellationJob.progress);
+                EditorUtility.DisplayProgressBar("creating data", "tessellation", tessellationJob.Progress);
                 if (tessellationJob.IsDone)
                     break;
             }
@@ -137,16 +137,16 @@ public class MTDataEditor : EditorWindow
                 int packed = 0;
                 int start_meshId = -1;
                 MemoryStream stream = new MemoryStream();
-                for (int i = 0; i < tessellationJob.mesh.Length; ++i)
+                for (int i = 0; i < tessellationJob.Mesh.Length; ++i)
                 {
-                    MTMeshData data = tessellationJob.mesh[i];
+                    MTMeshData data = tessellationJob.Mesh[i];
                     if (!treeRoot.AddMesh(data))
                     {
                         Debug.LogError("mesh can't insert into tree : " + data.meshId);
                     }
                     if (start_meshId < 0)
                         start_meshId = data.meshId;
-                    EditorUtility.DisplayProgressBar("saving mesh data", "processing", (float)i / tessellationJob.mesh.Length);
+                    EditorUtility.DisplayProgressBar("saving mesh data", "processing", (float)i / tessellationJob.Mesh.Length);
                     if (packed % datapack == 0)
                     {
                         if (stream.Length > 0)

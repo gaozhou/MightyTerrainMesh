@@ -1,99 +1,106 @@
-﻿namespace MightyTerrainMesh
-{
-    using System;
-    using System.IO;
-    using System.Collections.Generic;
-    using UnityEngine;
-    using UnityEngine.Rendering;
+﻿using System.Collections.Generic;
+using System.IO;
+using UnityEngine;
+using UnityEngine.Rendering;
 
+namespace MightyTerrainMesh
+{
     internal class MTRuntimeMeshPool
     {
-        class MeshStreamCache
+        private class MeshStreamCache
         {
-            public string Path { get; private set; }
-            public bool Obseleted
-            {
-                get { return offsets == null || usedCount == offsets.Length; }
-            }
-            private MemoryStream memStream;
-            private int[] offsets;
-            private int usedCount = 0;
+            public string Path { get; }
+
+            public bool Obsolete => _offsets == null || _usedCount == _offsets.Length;
+
+            private readonly MemoryStream _memStream;
+            private readonly int[] _offsets;
+            private int _usedCount;
+
             public MeshStreamCache(string path, int pack, byte[] data)
             {
                 Path = path;
-                memStream = new MemoryStream(data);
-                offsets = new int[pack];
-                for (int i = 0; i < pack; ++i)
+                _memStream = new MemoryStream(data);
+                _offsets = new int[pack];
+                for (var i = 0; i < pack; ++i)
                 {
-                    offsets[i] = MTFileUtils.ReadInt(memStream);
+                    _offsets[i] = MTFileUtils.ReadInt(_memStream);
                 }
             }
+
             public MTRenderMesh GetMesh(int meshId)
             {
-                int offset_stride = meshId % offsets.Length;
-                int offset = offsets[offset_stride];
+                var offsetStride = meshId % _offsets.Length;
+                var offset = _offsets[offsetStride];
                 var rm = new MTRenderMesh();
-                memStream.Position = offset;
-                MTMeshUtils.Deserialize(memStream, rm);
-                ++usedCount;
+                _memStream.Position = offset;
+                MTMeshUtils.Deserialize(_memStream, rm);
+                ++_usedCount;
                 return rm;
             }
+
             public void Clear()
             {
-                memStream.Close();
+                _memStream.Close();
             }
         }
-        private MTData rawData;
-        private Dictionary<int, MTRenderMesh> parsedMesh = new Dictionary<int, MTRenderMesh>();
+
+        private readonly MTData _rawData;
+
+        private readonly Dictionary<int, MTRenderMesh> _parsedMesh = new Dictionary<int, MTRenderMesh>();
+
         //memory data cache, once all data parsed into mesh, it will be destroied
-        private Dictionary<string, MeshStreamCache> dataStreams = new Dictionary<string, MeshStreamCache>();
-        private IMeshDataLoader loader;
+        private readonly Dictionary<string, MeshStreamCache> _dataStreams = new Dictionary<string, MeshStreamCache>();
+        private readonly IMeshDataLoader _loader;
+
         public MTRuntimeMeshPool(MTData data, IMeshDataLoader ld)
         {
-            rawData = data;
-            loader = ld;
+            _rawData = data;
+            _loader = ld;
         }
+
         public MTRenderMesh PopMesh(int meshId)
         {
-            if (!parsedMesh.ContainsKey(meshId) && meshId >= 0)
+            if (!_parsedMesh.ContainsKey(meshId) && meshId >= 0)
             {
-                int startMeshId = meshId / rawData.MeshDataPack * rawData.MeshDataPack;
-                var path = string.Format("{0}_{1}", rawData.MeshPrefix, startMeshId);
-                if (!dataStreams.ContainsKey(path))
+                var startMeshId = meshId / _rawData.MeshDataPack * _rawData.MeshDataPack;
+                var path = $"{_rawData.MeshPrefix}_{startMeshId}";
+                if (!_dataStreams.ContainsKey(path))
                 {
-                    var meshbytes = loader.LoadMeshData(path);
-                    var cache = new MeshStreamCache(path, rawData.MeshDataPack, meshbytes);
-                    dataStreams.Add(path, cache);
+                    var meshBytes = _loader.LoadMeshData(path);
+                    var cache = new MeshStreamCache(path, _rawData.MeshDataPack, meshBytes);
+                    _dataStreams.Add(path, cache);
                 }
-                var streamCache = dataStreams[path];
+
+                var streamCache = _dataStreams[path];
                 var rm = streamCache.GetMesh(meshId);
-                parsedMesh.Add(meshId, rm);
-                if (streamCache.Obseleted)
+                _parsedMesh.Add(meshId, rm);
+                if (streamCache.Obsolete)
                 {
-                    dataStreams.Remove(streamCache.Path);
-                    loader.UnloadAsset(streamCache.Path);
+                    _dataStreams.Remove(streamCache.Path);
+                    _loader.UnloadAsset(streamCache.Path);
                     streamCache.Clear();
                 }
             }
-            if (parsedMesh.ContainsKey(meshId))
-            {
-                return parsedMesh[meshId];
-            }
-            return null;
+
+            return _parsedMesh.TryGetValue(meshId, out var mesh) ? mesh : null;
         }
+
         public void Clear()
         {
-            foreach (var cache in dataStreams.Values)
+            foreach (var cache in _dataStreams.Values)
             {
-                loader.UnloadAsset(cache.Path);
+                _loader.UnloadAsset(cache.Path);
                 cache.Clear();
             }
-            dataStreams.Clear();
-            foreach (var m in parsedMesh.Values)
+
+            _dataStreams.Clear();
+            foreach (var m in _parsedMesh.Values)
             {
                 m.Clear();
             }
-            parsedMesh.Clear();
+
+            _parsedMesh.Clear();
         }
     }
 
@@ -103,88 +110,89 @@
         public MTLODPolicy lodPolicy;
         public Camera cullCamera;
         public GameObject VTCreatorGo;
-        public bool receiveShadow = true;
-        public float detailDrawDistance = 80;
-        public bool showDebug = false;
+
         //
-        private MTRuntimeMeshPool meshPool;
-        private MTQuadTreeUtil quadtree;
-        private MTHeightMap heightMap;
-        private MTArray<MTQuadTreeNode> activeCmd;
-        private MTArray<MTQuadTreeNode> deactiveCmd;
-        private Dictionary<int, MTPooledRenderMesh> activeMeshes = new Dictionary<int, MTPooledRenderMesh>();
-        private IVTCreator vtCreator;
-        private Matrix4x4 projM;
-        private Matrix4x4 prevWorld2Cam;
+        private MTRuntimeMeshPool _meshPool;
+        private MTQuadTreeUtil _quadtree;
+        private MTHeightMap _heightMap;
+        private MTArray<MTQuadTreeNode> _activeCmd;
+        private MTArray<MTQuadTreeNode> _deactivateCmd;
+
+        private readonly Dictionary<int, ImtPooledRenderMesh>
+            _activeMeshes = new Dictionary<int, ImtPooledRenderMesh>();
+
+        private IVTCreator _vtCreator;
+        private Matrix4x4 _projM;
+        private Matrix4x4 _prevWorld2Cam;
+
         private void ActiveMesh(MTQuadTreeNode node)
         {
-            MTPooledRenderMesh patch = MTPooledRenderMesh.Pop();
-            var m = meshPool.PopMesh(node.meshIdx);
-            patch.Reset(header, vtCreator, m, transform.position);
-            activeMeshes.Add(node.meshIdx, patch);
+            var patch = ImtPooledRenderMesh.Pop();
+            var m = _meshPool.PopMesh(node.meshIdx);
+            patch.Reset(header, _vtCreator, m, transform.position);
+            _activeMeshes.Add(node.meshIdx, patch);
         }
-        private void DeactiveMesh(MTQuadTreeNode node)
+
+        private void DeactivateMesh(MTQuadTreeNode node)
         {
-            var p = activeMeshes[node.meshIdx];
-            activeMeshes.Remove(node.meshIdx);
-            MTPooledRenderMesh.Push(p);
+            var p = _activeMeshes[node.meshIdx];
+            _activeMeshes.Remove(node.meshIdx);
+            ImtPooledRenderMesh.Push(p);
         }
+
         private void Awake()
         {
             IMeshDataLoader loader = new MeshDataResLoader();
-            quadtree = new MTQuadTreeUtil(header.TreeData.bytes, transform.position);
-            heightMap = new MTHeightMap(quadtree.Bound, header.HeightmapResolution, header.HeightmapScale, header.HeightMap.bytes);
-            activeCmd = new MTArray<MTQuadTreeNode>(quadtree.NodeCount);
-            deactiveCmd = new MTArray<MTQuadTreeNode>(quadtree.NodeCount);
-            meshPool = new MTRuntimeMeshPool(header, loader);
-            vtCreator = VTCreatorGo.GetComponent<IVTCreator>();
-            prevWorld2Cam = Matrix4x4.identity;
-            projM = Matrix4x4.Perspective(cullCamera.fieldOfView, cullCamera.aspect, cullCamera.nearClipPlane, cullCamera.farClipPlane);
+            _quadtree = new MTQuadTreeUtil(header.TreeData.bytes, transform.position);
+            _heightMap = new MTHeightMap(_quadtree.Bound, header.HeightmapResolution, header.HeightmapScale,
+                header.HeightMap.bytes);
+            _activeCmd = new MTArray<MTQuadTreeNode>(_quadtree.NodeCount);
+            _deactivateCmd = new MTArray<MTQuadTreeNode>(_quadtree.NodeCount);
+            _meshPool = new MTRuntimeMeshPool(header, loader);
+            _vtCreator = VTCreatorGo.GetComponent<IVTCreator>();
+            _prevWorld2Cam = Matrix4x4.identity;
+            _projM = Matrix4x4.Perspective(cullCamera.fieldOfView, cullCamera.aspect, cullCamera.nearClipPlane,
+                cullCamera.farClipPlane);
             RenderPipelineManager.beginFrameRendering += OnFrameRendering;
         }
+
         void OnFrameRendering(ScriptableRenderContext context, Camera[] cameras)
         {
-            if (quadtree != null && cullCamera != null)
+            if (_quadtree == null || cullCamera == null) return;
+            var world2Cam = cullCamera.worldToCameraMatrix;
+            if (_prevWorld2Cam == world2Cam) return;
+            _prevWorld2Cam = world2Cam;
+            _activeCmd.Reset();
+            _deactivateCmd.Reset();
+            _quadtree.CullQuadtree(cullCamera.transform.position, cullCamera.fieldOfView, Screen.height,
+                Screen.width, world2Cam, _projM,
+                _activeCmd, _deactivateCmd, lodPolicy);
+            for (var i = 0; i < _activeCmd.Length; ++i)
             {
-                Matrix4x4 world2Cam = cullCamera.worldToCameraMatrix;
-                if (prevWorld2Cam != world2Cam)
-                {
-                    prevWorld2Cam = world2Cam;
-                    activeCmd.Reset();
-                    deactiveCmd.Reset();
-                    quadtree.CullQuadtree(cullCamera.transform.position, cullCamera.fieldOfView, Screen.height, Screen.width, world2Cam, projM,
-                        activeCmd, deactiveCmd, lodPolicy);
-                    for (int i = 0; i < activeCmd.Length; ++i)
-                    {
-                        ActiveMesh(activeCmd.Data[i]);
-                    }
-                    for (int i = 0; i < deactiveCmd.Length; ++i)
-                    {
-                        DeactiveMesh(deactiveCmd.Data[i]);
-                    }
-                    if (quadtree.ActiveNodes.Length > 0)
-                    {
-                        for (int i=0; i< quadtree.ActiveNodes.Length; ++i)
-                        {
-                            var node = quadtree.ActiveNodes.Data[i];
-                            var p = activeMeshes[node.meshIdx];
-                            p.UpdatePatch(cullCamera.transform.position, cullCamera.fieldOfView, Screen.height, Screen.width);
-                        }
-                    }
-                }
+                ActiveMesh(_activeCmd.Data[i]);
+            }
+
+            for (var i = 0; i < _deactivateCmd.Length; ++i)
+            {
+                DeactivateMesh(_deactivateCmd.Data[i]);
+            }
+
+            if (_quadtree.ActiveNodes.Length <= 0) return;
+            for (var i = 0; i < _quadtree.ActiveNodes.Length; ++i)
+            {
+                var node = _quadtree.ActiveNodes.Data[i];
+                var p = _activeMeshes[node.meshIdx];
+                p.UpdatePatch(cullCamera.transform.position, cullCamera.fieldOfView, Screen.height,
+                    Screen.width);
             }
         }
+
         private void OnDestroy()
         {
             RenderPipelineManager.beginFrameRendering -= OnFrameRendering;
-            meshPool.Clear();
-            MTPooledRenderMesh.Clear();
-            MTHeightMap.UnregisterMap(heightMap);
-        }
-        private void OnDrawGizmos()
-        {
-            if (!showDebug)
-                return;
+            _meshPool.Clear();
+            ImtPooledRenderMesh.Clear();
+            MTHeightMap.UnregisterMap(_heightMap);
         }
     }
 }
