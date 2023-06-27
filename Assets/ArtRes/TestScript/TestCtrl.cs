@@ -29,7 +29,7 @@ public class TestCtrl : MonoBehaviour, IMTWaterHeightProvider
     }
     void OnDestroy()
     {
-        MTWaterHeight.UnregProvider(this);
+        MTWaterHeight.UnRegProvider(this);
     }
     // Start is called before the first frame update
     void Start()
