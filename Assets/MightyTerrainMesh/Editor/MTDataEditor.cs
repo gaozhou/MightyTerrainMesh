@@ -222,7 +222,6 @@ public class MTDataEditor : EditorWindow
             dataHeader.BakedMat = AssetDatabase.LoadAssetAtPath(bakedMatPath, typeof(Material)) as Material;
             //export height map
             ExportHeightMap(dataHeader, curentTarget, topFulllPath, folder0);
-            ExportDetails(dataHeader, curentTarget, topFulllPath, folder0);
             //
             AssetDatabase.CreateAsset(dataHeader, string.Format("{0}/{1}.asset", folder0, terrainTarget.name));
             AssetDatabase.SaveAssets();
@@ -283,104 +282,5 @@ public class MTDataEditor : EditorWindow
         File.WriteAllBytes(string.Format("{0}/heightMap.bytes", topFulllPath), heightBytes);
         AssetDatabase.Refresh();
         dataHeader.HeightMap = AssetDatabase.LoadAssetAtPath(string.Format("{0}/heightMap.bytes", folder0), typeof(TextAsset)) as TextAsset;
-    }
-    private void ExportDetails(MTData dataHeader, Terrain curentTarget, string topFulllPath, string folder0)
-    {
-        EditorUtility.DisplayProgressBar("saving details", "processing", 0);
-        var original = curentTarget.terrainData.detailPrototypes;
-        //combine layers of the same mesh
-        List<MTDetailLayerData> lLayers = new List<MTDetailLayerData>();
-        int[][,] layerDatas = new int[original.Length][,];
-        for (int l = 0; l < original.Length; ++l)
-        {
-            var originalLayer = original[l];
-            if (originalLayer.prototype == null)
-                continue;
-            var layerName = originalLayer.prototype.name;
-            layerDatas[l] = curentTarget.terrainData.GetDetailLayer(0, 0, curentTarget.terrainData.detailWidth, curentTarget.terrainData.detailHeight, l);
-            var layer = new MTDetailLayerData();
-            layer.minWidth = originalLayer.minWidth;
-            layer.maxWidth = originalLayer.maxWidth;
-            layer.minHeight = originalLayer.minHeight;
-            layer.maxHeight = originalLayer.maxHeight;
-            layer.noiseSpread = originalLayer.noiseSpread;
-            layer.dryColor = originalLayer.dryColor;
-            layer.healthyColor = originalLayer.healthyColor;
-            layer.prototype = originalLayer.prototype;
-            lLayers.Add(layer);
-        }
-        dataHeader.DetailPrototypes = new MTDetailLayerData[lLayers.Count];
-        dataHeader.DetailWidth = curentTarget.terrainData.detailWidth;
-        dataHeader.DetailHeight = curentTarget.terrainData.detailHeight;
-        dataHeader.DetailResolutionPerPatch = curentTarget.terrainData.detailResolutionPerPatch;
-        if (dataHeader.DetailHeight / dataHeader.DetailResolutionPerPatch > byte.MaxValue)
-        {
-            Debug.LogError("导出Detail失败，DetailResolutionPerPatch 数值太小");
-            return;
-        }
-        //split data to patches, drop empty patches
-        //layer header : [patch data offsets] 4 bytes each, -1 means no density
-        //patch data : [patch block] 1 byte each
-        //
-        MemoryStream detailStream = new MemoryStream();
-        int patch_x = Mathf.CeilToInt((float)dataHeader.DetailWidth / dataHeader.DetailResolutionPerPatch);
-        int patch_y = Mathf.CeilToInt((float)dataHeader.DetailHeight / dataHeader.DetailResolutionPerPatch);
-        byte[] patch_block = new byte[dataHeader.DetailResolutionPerPatch * dataHeader.DetailResolutionPerPatch];
-        int[] patchDataOffsets = new int[patch_x * patch_y * lLayers.Count];
-        //header占位
-        foreach (var d in patchDataOffsets)
-            MTFileUtils.WriteInt(detailStream, -1);
-        for (int l=0; l<lLayers.Count; ++l)
-        {
-            var layer = lLayers[l];
-            dataHeader.DetailPrototypes[l] = layer;
-            layer.maxDensity = 0;
-            //Texture2D debugTex = new Texture2D(dataHeader.DetailWidth, dataHeader.DetailHeight);
-            for (int py = 0; py <patch_y; ++py)
-            {
-                for (int px = 0; px < patch_x; ++px)
-                {
-                    int max_density = 0;
-                    for(int sub_py = 0; sub_py < dataHeader.DetailResolutionPerPatch; ++sub_py)
-                    {
-                        for (int sub_px = 0; sub_px < dataHeader.DetailResolutionPerPatch; ++sub_px)
-                        {
-                            int hy = py * dataHeader.DetailResolutionPerPatch + sub_py;
-                            int hx = px * dataHeader.DetailResolutionPerPatch + sub_px;
-                            hy = Mathf.Min(hy, dataHeader.DetailHeight);
-                            hx = Mathf.Min(hx, dataHeader.DetailWidth);
-                            int density = layerDatas[l][hy, hx];
-                            if (density > max_density)
-                                max_density = density;
-                            patch_block[sub_py * dataHeader.DetailResolutionPerPatch + sub_px] = (byte)density;
-                        }
-                    }
-                    var offsetDataIdx = l * patch_x * patch_y + py * patch_x + px;
-                    if (max_density > 0)
-                    {
-                        patchDataOffsets[offsetDataIdx] = (int)detailStream.Position;
-                        detailStream.Write(patch_block, 0, patch_block.Length);
-                    }
-                    else
-                    {
-                        patchDataOffsets[offsetDataIdx] = -1;
-                    }
-                    if (max_density > layer.maxDensity)
-                        layer.maxDensity = max_density;
-                }
-            }
-            //var tgaBytes = debugTex.EncodeToTGA();
-            //FileStream stream = File.Open(string.Format("{0}/debug_desity_texture.tga", topFulllPath), FileMode.Create);
-            //stream.Write(tgaBytes, 0, tgaBytes.Length);
-            //stream.Close();
-            //AssetDatabase.Refresh();
-        }
-        detailStream.Position = 0;
-        foreach (var d in patchDataOffsets)
-            MTFileUtils.WriteInt(detailStream, d);
-        File.WriteAllBytes(string.Format("{0}/details.bytes", topFulllPath), detailStream.ToArray());
-        detailStream.Close();
-        AssetDatabase.Refresh();
-        dataHeader.DetailLayers = AssetDatabase.LoadAssetAtPath(string.Format("{0}/details.bytes", folder0), typeof(TextAsset)) as TextAsset;
     }
 }

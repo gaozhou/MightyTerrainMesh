@@ -114,11 +114,8 @@
         private MTArray<MTQuadTreeNode> deactiveCmd;
         private Dictionary<int, MTPooledRenderMesh> activeMeshes = new Dictionary<int, MTPooledRenderMesh>();
         private IVTCreator vtCreator;
-        private MTDetailRenderer detailRenderer;
         private Matrix4x4 projM;
-        private Matrix4x4 detailProjM;
         private Matrix4x4 prevWorld2Cam;
-        private Plane[] detailCullPlanes = new Plane[6];
         private void ActiveMesh(MTQuadTreeNode node)
         {
             MTPooledRenderMesh patch = MTPooledRenderMesh.Pop();
@@ -141,10 +138,8 @@
             deactiveCmd = new MTArray<MTQuadTreeNode>(quadtree.NodeCount);
             meshPool = new MTRuntimeMeshPool(header, loader);
             vtCreator = VTCreatorGo.GetComponent<IVTCreator>();
-            detailRenderer = new MTDetailRenderer(header, quadtree.Bound, receiveShadow);
             prevWorld2Cam = Matrix4x4.identity;
             projM = Matrix4x4.Perspective(cullCamera.fieldOfView, cullCamera.aspect, cullCamera.nearClipPlane, cullCamera.farClipPlane);
-            detailProjM = Matrix4x4.Perspective(cullCamera.fieldOfView, cullCamera.aspect, cullCamera.nearClipPlane, detailDrawDistance);
             RenderPipelineManager.beginFrameRendering += OnFrameRendering;
         }
         void OnFrameRendering(ScriptableRenderContext context, Camera[] cameras)
@@ -176,16 +171,12 @@
                             p.UpdatePatch(cullCamera.transform.position, cullCamera.fieldOfView, Screen.height, Screen.width);
                         }
                     }
-                    GeometryUtility.CalculateFrustumPlanes(detailProjM * world2Cam, detailCullPlanes);                    
-                    detailRenderer.Cull(detailCullPlanes);
                 }
-                detailRenderer.OnUpdate(cullCamera);
             }
         }
         private void OnDestroy()
         {
             RenderPipelineManager.beginFrameRendering -= OnFrameRendering;
-            detailRenderer.Clear();
             meshPool.Clear();
             MTPooledRenderMesh.Clear();
             MTHeightMap.UnregisterMap(heightMap);
@@ -194,8 +185,6 @@
         {
             if (!showDebug)
                 return;
-            if (detailRenderer != null)
-                detailRenderer.DrawDebug();
         }
     }
 }
