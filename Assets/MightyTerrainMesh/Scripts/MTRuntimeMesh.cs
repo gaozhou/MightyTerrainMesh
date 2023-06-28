@@ -75,11 +75,11 @@ namespace MightyTerrainMesh
             if (_mMats == null)
             {
                 _mMats = new Material[1];
-                _mMats[0] = Object.Instantiate(_mDataHeader.BakedMat);
+                _mMats[0] = Object.Instantiate(_mDataHeader.bakedMat);
             }
 
             ClearRendererMaterial();
-            _mRenderer.materials = _mDataHeader.DetailMats;
+            _mRenderer.materials = _mDataHeader.detailMats;
             //
             _mDiameter = _mRm.Mesh.bounds.size.magnitude;
             _mCenter = _mRm.Mesh.bounds.center + offset;
@@ -130,8 +130,8 @@ namespace MightyTerrainMesh
             cmd.Size = size;
             cmd.UVMin = _mRm.UVMin;
             cmd.UVMax = _mRm.UVMax;
-            cmd.BakeDiffuse = _mDataHeader.BakeDiffuseMats;
-            cmd.BakeNormal = _mDataHeader.BakeNormalMats;
+            cmd.BakeDiffuse = _mDataHeader.bakeDiffuseMats;
+            cmd.BakeNormal = _mDataHeader.bakeNormalMats;
             cmd.Receiver = this;
             if (_waitBackCmdId > 0)
             {

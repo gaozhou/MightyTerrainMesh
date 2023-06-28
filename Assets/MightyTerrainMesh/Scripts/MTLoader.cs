@@ -63,12 +63,12 @@ namespace MightyTerrainMesh
         {
             if (!_parsedMesh.ContainsKey(meshId) && meshId >= 0)
             {
-                var startMeshId = meshId / _rawData.MeshDataPack * _rawData.MeshDataPack;
-                var path = $"{_rawData.MeshPrefix}_{startMeshId}";
+                var startMeshId = meshId / _rawData.meshDataPack * _rawData.meshDataPack;
+                var path = $"{_rawData.meshPrefix}_{startMeshId}";
                 if (!_dataStreams.ContainsKey(path))
                 {
                     var meshBytes = _loader.LoadMeshData(path);
-                    var cache = new MeshStreamCache(path, _rawData.MeshDataPack, meshBytes);
+                    var cache = new MeshStreamCache(path, _rawData.meshDataPack, meshBytes);
                     _dataStreams.Add(path, cache);
                 }
 
@@ -143,9 +143,9 @@ namespace MightyTerrainMesh
         private void Awake()
         {
             IMeshDataLoader loader = new MeshDataResLoader();
-            _quadtree = new MTQuadTreeUtil(header.TreeData.bytes, transform.position);
-            _heightMap = new MTHeightMap(_quadtree.Bound, header.HeightmapResolution, header.HeightmapScale,
-                header.HeightMap.bytes);
+            _quadtree = new MTQuadTreeUtil(header.treeData.bytes, transform.position);
+            _heightMap = new MTHeightMap(_quadtree.Bound, header.heightmapResolution, header.heightmapScale,
+                header.heightMap.bytes);
             _activeCmd = new MTArray<MTQuadTreeNode>(_quadtree.NodeCount);
             _deactivateCmd = new MTArray<MTQuadTreeNode>(_quadtree.NodeCount);
             _meshPool = new MTRuntimeMeshPool(header, loader);

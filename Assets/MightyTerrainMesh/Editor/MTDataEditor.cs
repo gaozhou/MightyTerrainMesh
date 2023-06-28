@@ -131,8 +131,8 @@ public class MTDataEditor : EditorWindow
             var meshFulllPath = Application.dataPath + folder1.Substring(folder1.IndexOf("/"));
             //
             MTData dataHeader = ScriptableObject.CreateInstance<MTData>();
-            dataHeader.MeshDataPack = datapack;
-            dataHeader.MeshPrefix = terrainTarget.name;
+            dataHeader.meshDataPack = datapack;
+            dataHeader.meshPrefix = terrainTarget.name;
             {
                 int packed = 0;
                 int start_meshId = -1;
@@ -190,7 +190,7 @@ public class MTDataEditor : EditorWindow
                 File.WriteAllBytes(string.Format("{0}/treeData.bytes", topFulllPath), stream.ToArray());
                 stream.Close();
                 AssetDatabase.Refresh();
-                dataHeader.TreeData = AssetDatabase.LoadAssetAtPath(string.Format("{0}/treeData.bytes", folder0), typeof(TextAsset)) as TextAsset;
+                dataHeader.treeData = AssetDatabase.LoadAssetAtPath(string.Format("{0}/treeData.bytes", folder0), typeof(TextAsset)) as TextAsset;
             }
             List<string> detailMats = new List<string>();
             List<string> bakeAlbetoMats = new List<string>();
@@ -199,27 +199,27 @@ public class MTDataEditor : EditorWindow
             MTMatUtils.SaveMixMaterials(folder0, terrainTarget.name, terrainTarget, detailMats);
             //materials for baking texture
             MTMatUtils.SaveVTMaterials(folder0, terrainTarget.name, terrainTarget, bakeAlbetoMats, bakeBumpMats);
-            dataHeader.DetailMats = new Material[detailMats.Count];
+            dataHeader.detailMats = new Material[detailMats.Count];
             for (int p = 0; p < detailMats.Count; ++p)
             {
-                dataHeader.DetailMats[p] = AssetDatabase.LoadAssetAtPath(detailMats[p], typeof(Material)) as Material;
+                dataHeader.detailMats[p] = AssetDatabase.LoadAssetAtPath(detailMats[p], typeof(Material)) as Material;
             }
-            dataHeader.BakeDiffuseMats = new Material[bakeAlbetoMats.Count];
+            dataHeader.bakeDiffuseMats = new Material[bakeAlbetoMats.Count];
             for (int p = 0; p < bakeAlbetoMats.Count; ++p)
             {
-                dataHeader.BakeDiffuseMats[p] = AssetDatabase.LoadAssetAtPath(bakeAlbetoMats[p], typeof(Material)) as Material;
+                dataHeader.bakeDiffuseMats[p] = AssetDatabase.LoadAssetAtPath(bakeAlbetoMats[p], typeof(Material)) as Material;
             }
-            dataHeader.BakeNormalMats = new Material[bakeBumpMats.Count];
+            dataHeader.bakeNormalMats = new Material[bakeBumpMats.Count];
             for (int p = 0; p < bakeBumpMats.Count; ++p)
             {
-                dataHeader.BakeNormalMats[p] = AssetDatabase.LoadAssetAtPath(bakeBumpMats[p], typeof(Material)) as Material;
+                dataHeader.bakeNormalMats[p] = AssetDatabase.LoadAssetAtPath(bakeBumpMats[p], typeof(Material)) as Material;
             }
             //materials for baked texture
             Material bakedMat = new Material(Shader.Find("MT/TerrainVTLit"));
             bakedMat.EnableKeyword("_NORMALMAP");
             var bakedMatPath = string.Format("{0}/BakedMat.mat", folder0);
             AssetDatabase.CreateAsset(bakedMat, bakedMatPath);
-            dataHeader.BakedMat = AssetDatabase.LoadAssetAtPath(bakedMatPath, typeof(Material)) as Material;
+            dataHeader.bakedMat = AssetDatabase.LoadAssetAtPath(bakedMatPath, typeof(Material)) as Material;
             //export height map
             ExportHeightMap(dataHeader, curentTarget, topFulllPath, folder0);
             //
@@ -264,23 +264,23 @@ public class MTDataEditor : EditorWindow
     private void ExportHeightMap(MTData dataHeader, Terrain curentTarget, string topFulllPath, string folder0)
     {
         EditorUtility.DisplayProgressBar("saving height map", "processing", 0);
-        dataHeader.HeightmapResolution = curentTarget.terrainData.heightmapResolution;
-        dataHeader.HeightmapScale = curentTarget.terrainData.heightmapScale;
-        float[,] heightData = curentTarget.terrainData.GetHeights(0, 0, dataHeader.HeightmapResolution, dataHeader.HeightmapResolution);
-        byte[] heightBytes = new byte[dataHeader.HeightmapResolution * dataHeader.HeightmapResolution * 2];
-        for (int hy = 0; hy < dataHeader.HeightmapResolution; ++hy)
+        dataHeader.heightmapResolution = curentTarget.terrainData.heightmapResolution;
+        dataHeader.heightmapScale = curentTarget.terrainData.heightmapScale;
+        float[,] heightData = curentTarget.terrainData.GetHeights(0, 0, dataHeader.heightmapResolution, dataHeader.heightmapResolution);
+        byte[] heightBytes = new byte[dataHeader.heightmapResolution * dataHeader.heightmapResolution * 2];
+        for (int hy = 0; hy < dataHeader.heightmapResolution; ++hy)
         {
-            for (int hx = 0; hx < dataHeader.HeightmapResolution; ++hx)
+            for (int hx = 0; hx < dataHeader.heightmapResolution; ++hx)
             {
                 float val = heightData[hy, hx] * 255f;
                 byte h = (byte)Mathf.FloorToInt(val);
                 byte l = (byte)Mathf.FloorToInt((val - h) * 255f);
-                heightBytes[hy * dataHeader.HeightmapResolution * 2 + hx * 2] = h;
-                heightBytes[hy * dataHeader.HeightmapResolution * 2 + hx * 2 + 1] = l;
+                heightBytes[hy * dataHeader.heightmapResolution * 2 + hx * 2] = h;
+                heightBytes[hy * dataHeader.heightmapResolution * 2 + hx * 2 + 1] = l;
             }
         }
         File.WriteAllBytes(string.Format("{0}/heightMap.bytes", topFulllPath), heightBytes);
         AssetDatabase.Refresh();
-        dataHeader.HeightMap = AssetDatabase.LoadAssetAtPath(string.Format("{0}/heightMap.bytes", folder0), typeof(TextAsset)) as TextAsset;
+        dataHeader.heightMap = AssetDatabase.LoadAssetAtPath(string.Format("{0}/heightMap.bytes", folder0), typeof(TextAsset)) as TextAsset;
     }
 }

@@ -1,18 +1,19 @@
 ﻿using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace MightyTerrainMesh
 {
     public class MTLODPolicy : ScriptableObject
     {
-        public float[] ScreenCover;
+        [FormerlySerializedAs("ScreenCover")] public float[] screenCover;
 
         public int GetLODLevel(float screenSize, float screenW)
         {
-            if (ScreenCover == null) return 0;
+            if (screenCover == null) return 0;
             var rate = screenSize / screenW;
-            for (var lod = 0; lod < ScreenCover.Length; ++lod)
+            for (var lod = 0; lod < screenCover.Length; ++lod)
             {
-                if (rate >= ScreenCover[lod])
+                if (rate >= screenCover[lod])
                     return lod;
             }
 
