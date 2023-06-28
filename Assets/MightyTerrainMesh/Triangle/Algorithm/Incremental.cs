@@ -5,11 +5,11 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet.Algorithm
+namespace TriangleDotNet.Algorithm
 {
-    using TriangleNet.Data;
-    using TriangleNet.Log;
-    using TriangleNet.Geometry;
+    using TriangleDotNet.Data;
+    using TriangleDotNet.Log;
+    using TriangleDotNet.Geometry;
 
     /// <summary>
     /// Builds a delaunay triangulation using the incremental algorithm.

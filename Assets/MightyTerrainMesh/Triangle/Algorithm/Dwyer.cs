@@ -5,11 +5,11 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet.Algorithm
+namespace TriangleDotNet.Algorithm
 {
     using System;
-    using TriangleNet.Data;
-    using TriangleNet.Log;
+    using TriangleDotNet.Data;
+    using TriangleDotNet.Log;
 
     /// <summary>
     /// Builds a delaunay triangulation using the divide-and-conquer algorithm.

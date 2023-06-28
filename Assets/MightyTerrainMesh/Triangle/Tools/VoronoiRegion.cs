@@ -4,14 +4,14 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet.Tools
+namespace TriangleDotNet.Tools
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
-    using TriangleNet.Geometry;
-    using TriangleNet.Data;
+    using TriangleDotNet.Geometry;
+    using TriangleDotNet.Data;
 
     /// <summary>
     /// Represents a region in the Voronoi diagram.

@@ -4,14 +4,14 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet.Smoothing
+namespace TriangleDotNet.Smoothing
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
-    using TriangleNet.Geometry;
-    using TriangleNet.Tools;
+    using TriangleDotNet.Geometry;
+    using TriangleDotNet.Tools;
 
     /// <summary>
     /// Simple mesh smoother implementation.

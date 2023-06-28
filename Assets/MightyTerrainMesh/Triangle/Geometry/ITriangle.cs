@@ -4,9 +4,9 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet.Geometry
+namespace TriangleDotNet.Geometry
 {
-    using TriangleNet.Data;
+    using TriangleDotNet.Data;
 
     /// <summary>
     /// Triangle interface.

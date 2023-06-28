@@ -5,12 +5,12 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet.Tools
+namespace TriangleDotNet.Tools
 {
     using System;
     using System.Text;
-    using TriangleNet.Data;
-    using TriangleNet.Geometry;
+    using TriangleDotNet.Data;
+    using TriangleDotNet.Geometry;
 
     /// <summary>
     /// Gather mesh statistics.

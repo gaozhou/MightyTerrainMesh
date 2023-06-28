@@ -4,10 +4,10 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet.Tools
+namespace TriangleDotNet.Tools
 {
     using System.Collections.Generic;
-    using TriangleNet.Geometry;
+    using TriangleDotNet.Geometry;
 
     /// <summary>
     /// TODO: Update summary.

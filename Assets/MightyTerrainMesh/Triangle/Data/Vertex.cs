@@ -5,13 +5,13 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet.Data
+namespace TriangleDotNet.Data
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
-    using TriangleNet.Geometry;
+    using TriangleDotNet.Geometry;
 
     /// <summary>
     /// The vertex data structure.

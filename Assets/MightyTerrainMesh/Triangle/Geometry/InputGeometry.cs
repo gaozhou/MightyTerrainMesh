@@ -4,11 +4,11 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet.Geometry
+namespace TriangleDotNet.Geometry
 {
     using System;
     using System.Collections.Generic;
-    using TriangleNet.Data;
+    using TriangleDotNet.Data;
 
     /// <summary>
     /// The input geometry which will be triangulated. May represent a 

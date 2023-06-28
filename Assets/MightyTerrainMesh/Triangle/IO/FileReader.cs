@@ -5,14 +5,14 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet.IO
+namespace TriangleDotNet.IO
 {
     using System;
     using System.IO;
     using System.Globalization;
-    using TriangleNet.Data;
-    using TriangleNet.Log;
-    using TriangleNet.Geometry;
+    using TriangleDotNet.Data;
+    using TriangleDotNet.Log;
+    using TriangleDotNet.Geometry;
     using System.Collections.Generic;
 
     /// <summary>

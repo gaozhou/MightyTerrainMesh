@@ -4,7 +4,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet.Geometry
+namespace TriangleDotNet.Geometry
 {
     using System;
     using System.Collections.Generic;

@@ -5,10 +5,10 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet
+namespace TriangleDotNet
 {
     using System.Collections.Generic;
-    using TriangleNet.Data;
+    using TriangleDotNet.Data;
 
     /// <summary>
     /// A (priority) queue for bad triangles.

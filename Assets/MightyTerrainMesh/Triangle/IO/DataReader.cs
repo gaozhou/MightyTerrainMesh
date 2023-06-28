@@ -5,16 +5,16 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet.IO
+namespace TriangleDotNet.IO
 {
     using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Globalization;
-    using TriangleNet.Data;
-    using TriangleNet.Log;
-    using TriangleNet.Geometry;
+    using TriangleDotNet.Data;
+    using TriangleDotNet.Log;
+    using TriangleDotNet.Geometry;
 
     /// <summary>
     /// The DataReader class provides methods for mesh reconstruction.

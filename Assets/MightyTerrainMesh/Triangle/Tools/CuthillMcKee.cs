@@ -5,13 +5,13 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet.Tools
+namespace TriangleDotNet.Tools
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
-    using TriangleNet.Log;
+    using TriangleDotNet.Log;
 
     /// <summary>
     /// Applies the Cuthill and McKee renumbering algorithm to reduce the bandwidth of

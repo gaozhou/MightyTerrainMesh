@@ -5,18 +5,18 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet
+namespace TriangleDotNet
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using TriangleNet.Data;
-    using TriangleNet.Log;
-    using TriangleNet.IO;
-    using TriangleNet.Algorithm;
-    using TriangleNet.Smoothing;
-    using TriangleNet.Geometry;
-    using TriangleNet.Tools;
+    using TriangleDotNet.Data;
+    using TriangleDotNet.Log;
+    using TriangleDotNet.IO;
+    using TriangleDotNet.Algorithm;
+    using TriangleDotNet.Smoothing;
+    using TriangleDotNet.Geometry;
+    using TriangleDotNet.Tools;
 
     /// <summary>
     /// Mesh data structure.

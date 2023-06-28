@@ -5,10 +5,10 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet.Data
+namespace TriangleDotNet.Data
 {
     using System;
-    using TriangleNet.Geometry;
+    using TriangleDotNet.Geometry;
 
     /// <summary>
     /// The triangle data structure.

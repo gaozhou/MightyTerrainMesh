@@ -4,7 +4,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet.Smoothing
+namespace TriangleDotNet.Smoothing
 {
     using System;
     using System.Collections.Generic;

@@ -5,12 +5,12 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet
+namespace TriangleDotNet
 {
     using System;
-    using TriangleNet.Data;
-    using TriangleNet.Geometry;
-    using TriangleNet.Tools;
+    using TriangleDotNet.Data;
+    using TriangleDotNet.Geometry;
+    using TriangleDotNet.Tools;
 
     /// <summary>
     /// Provides some primitives regularly used in computational geometry.

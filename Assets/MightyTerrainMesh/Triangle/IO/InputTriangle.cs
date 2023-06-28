@@ -4,10 +4,10 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet.IO
+namespace TriangleDotNet.IO
 {
-    using TriangleNet.Data;
-    using TriangleNet.Geometry;
+    using TriangleDotNet.Data;
+    using TriangleDotNet.Geometry;
 
     /// <summary>
     /// Simple triangle class for input.

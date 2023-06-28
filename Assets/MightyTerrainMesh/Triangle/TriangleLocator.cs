@@ -5,10 +5,10 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet
+namespace TriangleDotNet
 {
-    using TriangleNet.Data;
-    using TriangleNet.Geometry;
+    using TriangleDotNet.Data;
+    using TriangleDotNet.Geometry;
 
     /// <summary>
     /// TODO: Update summary.

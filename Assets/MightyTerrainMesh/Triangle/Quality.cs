@@ -5,13 +5,13 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet
+namespace TriangleDotNet
 {
     using System;
     using System.Collections.Generic;
-    using TriangleNet.Data;
-    using TriangleNet.Log;
-    using TriangleNet.Geometry;
+    using TriangleDotNet.Data;
+    using TriangleDotNet.Log;
+    using TriangleDotNet.Geometry;
 
     /// <summary>
     /// Provides methods for mesh quality enforcement and testing.

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using TriangleNet.Geometry;
+using TriangleDotNet.Geometry;
 
 namespace MightyTerrainMesh
 {
@@ -38,7 +38,7 @@ namespace MightyTerrainMesh
                 geometry.AddPoint(vert.Position.x, vert.Position.z, 0);
             }
 
-            var meshRepresentation = new TriangleNet.Mesh();
+            var meshRepresentation = new TriangleDotNet.Mesh();
             meshRepresentation.Triangulate(geometry);
             if (meshRepresentation.Vertices.Count != lVerts.Count)
             {

@@ -5,16 +5,16 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet.Algorithm
+namespace TriangleDotNet.Algorithm
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
-    using TriangleNet.Data;
-    using TriangleNet.Log;
-    using TriangleNet.Geometry;
-    using TriangleNet.Tools;
+    using TriangleDotNet.Data;
+    using TriangleDotNet.Log;
+    using TriangleDotNet.Geometry;
+    using TriangleDotNet.Tools;
 
     /// <summary>
     /// Builds a delaunay triangulation using the sweepline algorithm.

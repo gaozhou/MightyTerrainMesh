@@ -4,7 +4,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet.Log
+namespace TriangleDotNet.Log
 {
     using System;
     using System.Collections.Generic;

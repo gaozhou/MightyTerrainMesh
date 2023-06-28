@@ -5,7 +5,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet.Data
+namespace TriangleDotNet.Data
 {
     using System;
     using System.Collections.Generic;

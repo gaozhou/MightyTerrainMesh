@@ -5,11 +5,11 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet.Tools
+namespace TriangleDotNet.Tools
 {
     using System.Collections.Generic;
     using System.Linq;
-    using TriangleNet.Geometry;
+    using TriangleDotNet.Geometry;
 
     /// <summary>
     /// A Quadtree implementation optimised for triangles.

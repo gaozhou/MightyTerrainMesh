@@ -5,13 +5,13 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet
+namespace TriangleDotNet
 {
-    using TriangleNet.Data;
+    using TriangleDotNet.Data;
     using System;
-    using TriangleNet.Geometry;
+    using TriangleDotNet.Geometry;
     using System.Collections.Generic;
-    using TriangleNet.Tools;
+    using TriangleDotNet.Tools;
 
     /// <summary>
     /// Carves holes into the triangulation.

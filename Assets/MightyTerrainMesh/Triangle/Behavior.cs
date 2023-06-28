@@ -5,10 +5,10 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet
+namespace TriangleDotNet
 {
     using System;
-    using TriangleNet.Log;
+    using TriangleDotNet.Log;
 
     /// <summary>
     /// Controls the behavior of the meshing software.

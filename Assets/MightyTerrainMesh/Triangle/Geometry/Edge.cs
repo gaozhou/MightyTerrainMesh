@@ -4,13 +4,13 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace TriangleNet.Geometry
+namespace TriangleDotNet.Geometry
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
-    using TriangleNet.Data;
+    using TriangleDotNet.Data;
 
     /// <summary>
     /// Represents a straight line segment in 2D space.
