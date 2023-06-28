@@ -164,7 +164,8 @@ namespace MightyTerrainMesh
             _mMats[0].SetTexture(Diffuse, _mTextures[0].Tex);
             _mMats[0].SetTextureScale(Diffuse, scale);
             _mMats[0].SetTextureOffset(Diffuse, offset);
-            _mMats[0].SetTexture(Normal, _mTextures[1].Tex);
+            if (_mTextures[1] != null)
+                _mMats[0].SetTexture(Normal, _mTextures[1].Tex);
             _mMats[0].SetTextureScale(Normal, scale);
             _mMats[0].SetTextureOffset(Normal, offset);
         }
