@@ -123,7 +123,7 @@ namespace MightyTerrainMesh
 
         public void CullQuadtree(Vector3 viewCenter, float fov, float screenH, float screenW, Matrix4x4 world2Cam,
             Matrix4x4 projectMatrix,
-            MTArray<MTQuadTreeNode> activeCmd, MTArray<MTQuadTreeNode> deactiveCmd, MTLODPolicy lodPolicy)
+            MTArray<MTQuadTreeNode> activeCmd, MTArray<MTQuadTreeNode> deactivateCmd, MTLODPolicy lodPolicy)
         {
             var planes = GeometryUtility.CalculateFrustumPlanes(projectMatrix * world2Cam);
             VisibleMeshes.Reset();
@@ -183,7 +183,7 @@ namespace MightyTerrainMesh
                 var meshId = ActiveMeshes.Data[i];
                 if (!VisibleMeshes.Contains(meshId))
                 {
-                    deactiveCmd.Add(meshId);
+                    deactivateCmd.Add(meshId);
                 }
             }
 

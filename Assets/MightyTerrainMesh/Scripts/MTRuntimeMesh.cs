@@ -1,5 +1,8 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using System.Collections.Generic;
+using Mono.Cecil;
+using Object = UnityEngine.Object;
 
 namespace MightyTerrainMesh
 {
@@ -98,6 +101,7 @@ namespace MightyTerrainMesh
 
         private void OnPushBackPool()
         {
+            _mRenderer.materials = Array.Empty<Material>();
             _mMats[0].SetTexture(Diffuse, null);
             _mMats[0].SetTexture(Normal, null);
             if (_mGo != null)

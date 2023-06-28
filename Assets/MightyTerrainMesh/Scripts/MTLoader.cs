@@ -151,8 +151,7 @@ namespace MightyTerrainMesh
             _meshPool = new MTRuntimeMeshPool(header, loader);
             _vtCreator = VTCreatorGo.GetComponent<IVTCreator>();
             _prevWorld2Cam = Matrix4x4.identity;
-            _projM = Matrix4x4.Perspective(cullCamera.fieldOfView, cullCamera.aspect, cullCamera.nearClipPlane,
-                cullCamera.farClipPlane);
+            
             RenderPipelineManager.beginFrameRendering += OnFrameRendering;
         }
 
@@ -161,6 +160,8 @@ namespace MightyTerrainMesh
             if (_quadtree == null || cullCamera == null) return;
             var world2Cam = cullCamera.worldToCameraMatrix;
             if (_prevWorld2Cam == world2Cam) return;
+            _projM = Matrix4x4.Perspective(cullCamera.fieldOfView, cullCamera.aspect, cullCamera.nearClipPlane,
+                cullCamera.farClipPlane);
             _prevWorld2Cam = world2Cam;
             _activeCmd.Reset();
             _deactivateCmd.Reset();
