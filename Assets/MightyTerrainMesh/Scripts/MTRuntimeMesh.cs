@@ -119,13 +119,6 @@ namespace MightyTerrainMesh
             _mRm = null;
         }
 
-        private int CalculateTextureSize(Vector3 viewCenter, float fov, float screenH)
-        {
-            var distance = Vector3.Distance(viewCenter, _mCenter);
-            var pixelSize = (_mDiameter * Mathf.Rad2Deg * screenH) / (distance * fov);
-            return Mathf.NextPowerOfTwo(Mathf.FloorToInt(pixelSize));
-        }
-
         private void RequestTexture(int size)
         {
             size = Mathf.Clamp(size, 128, 2048);
@@ -215,7 +208,7 @@ namespace MightyTerrainMesh
 
         public void UpdatePatch(Vector3 viewCenter, float fov, float screenH, float screenW)
         {
-            var curTexSize = CalculateTextureSize(viewCenter, fov, screenH);
+            var curTexSize = _mVTCreator.CalculateTextureSize(viewCenter, fov, screenH, _mDiameter, _mCenter);
             if (curTexSize != _mTextureSize)
             {
                 RequestTexture(curTexSize);

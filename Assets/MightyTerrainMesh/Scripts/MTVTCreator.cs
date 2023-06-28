@@ -53,6 +53,7 @@ namespace MightyTerrainMesh
     {
         void AppendCmd(MTVTCreateCmd cmd);
         void DisposeTextures(IMTVirtualTexture[] textures);
+        int CalculateTextureSize(Vector3 viewCenter, float fov, float screenH, float diameter, Vector3 center);
     }
 
     public class MTVTCreator : MonoBehaviour, IVTCreator
@@ -178,6 +179,13 @@ namespace MightyTerrainMesh
                     tex.Bake();
                 }
             }
+        }
+        
+        public int CalculateTextureSize(Vector3 viewCenter, float fov, float screenH, float diameter, Vector3 center)
+        {
+            var distance = Vector3.Distance(viewCenter, center);
+            var pixelSize = diameter * Mathf.Rad2Deg * screenH / (distance * fov);
+            return Mathf.NextPowerOfTwo(Mathf.FloorToInt(pixelSize));
         }
     }
 }
