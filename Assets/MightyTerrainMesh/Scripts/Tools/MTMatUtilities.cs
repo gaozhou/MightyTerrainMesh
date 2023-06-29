@@ -13,20 +13,18 @@ namespace MightyTerrainMesh
             if (matIdx >= t.terrainData.alphamapTextureCount)
                 return null;
             //alpha map
-            byte[] alphaMapData = t.terrainData.alphamapTextures[matIdx].EncodeToTGA();
-            string alphaMapSavePath = string.Format("{0}/{1}_alpha{2}.tga",
-                path, dataName, matIdx);
+            var alphaMapData = t.terrainData.alphamapTextures[matIdx].EncodeToTGA();
+            var alphaMapSavePath = $"{path}/{dataName}_alpha{matIdx}.tga";
             if (File.Exists(alphaMapSavePath))
                 File.Delete(alphaMapSavePath);
-            FileStream stream = File.Open(alphaMapSavePath, FileMode.Create);
+            var stream = File.Open(alphaMapSavePath, FileMode.Create);
             stream.Write(alphaMapData, 0, alphaMapData.Length);
             stream.Close();
             AssetDatabase.Refresh();
-            string alphaMapPath = string.Format("{0}/{1}_alpha{2}.tga", path,
-                dataName, matIdx);
+            var alphaMapPath = $"{path}/{dataName}_alpha{matIdx}.tga";
             //the alpha map texture has to be set to best compression quality, otherwise the black spot may
             //show on the ground
-            TextureImporter importer = AssetImporter.GetAtPath(alphaMapPath) as TextureImporter;
+            var importer = AssetImporter.GetAtPath(alphaMapPath) as TextureImporter;
             if (importer == null)
             {
                 MTLog.LogError("export terrain alpha map failed");
@@ -46,19 +44,19 @@ namespace MightyTerrainMesh
 #endif
         }
 
-        private static void SaveMixMaterail(string path, string dataName, Terrain t, int matIdx, int layerStart,
-            string shaderName, List<string> assetPath)
+        private static void SaveMixMaterial(string path, string dataName, Terrain t, int matIdx, int layerStart,
+            string shaderName, ICollection<string> assetPath)
         {
 #if UNITY_EDITOR
-            Texture2D alphaMap = ExportAlphaMap(path, dataName, t, matIdx);
+            var alphaMap = ExportAlphaMap(path, dataName, t, matIdx);
             if (alphaMap == null)
                 return;
             //
-            string mathPath = string.Format("{0}/{1}_{2}.mat", path, dataName, matIdx);
-            Material mat = AssetDatabase.LoadAssetAtPath<Material>(mathPath);
+            var mathPath = $"{path}/{dataName}_{matIdx}.mat";
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(mathPath);
             if (mat != null)
                 AssetDatabase.DeleteAsset(mathPath);
-            Material tMat = new Material(Shader.Find(shaderName));
+            var tMat = new Material(Shader.Find(shaderName));
             tMat.SetTexture("_Control", alphaMap);
             if (tMat == null)
             {
@@ -66,35 +64,34 @@ namespace MightyTerrainMesh
                 return;
             }
 
-            for (int l = layerStart; l < layerStart + 4 && l < t.terrainData.terrainLayers.Length; ++l)
+            for (var l = layerStart; l < layerStart + 4 && l < t.terrainData.terrainLayers.Length; ++l)
             {
-                int idx = l - layerStart;
-                TerrainLayer layer = t.terrainData.terrainLayers[l];
-                Vector2 tiling = new Vector2(t.terrainData.size.x / layer.tileSize.x,
+                var idx = l - layerStart;
+                var layer = t.terrainData.terrainLayers[l];
+                var tiling = new Vector2(t.terrainData.size.x / layer.tileSize.x,
                     t.terrainData.size.z / layer.tileSize.y);
-                tMat.SetTexture(string.Format("_Splat{0}", idx), layer.diffuseTexture);
-                tMat.SetTextureOffset(string.Format("_Splat{0}", idx), layer.tileOffset);
-                tMat.SetTextureScale(string.Format("_Splat{0}", idx), tiling);
-                tMat.SetTexture(string.Format("_Normal{0}", idx), layer.normalMapTexture);
-                tMat.SetFloat(string.Format("_NormalScale{0}", idx), layer.normalScale);
-                tMat.SetFloat(string.Format("_Metallic{0}", idx), layer.metallic);
-                tMat.SetFloat(string.Format("_Smoothness{0}", idx), layer.smoothness);
+                tMat.SetTexture($"_Splat{idx}", layer.diffuseTexture);
+                tMat.SetTextureOffset($"_Splat{idx}", layer.tileOffset);
+                tMat.SetTextureScale($"_Splat{idx}", tiling);
+                tMat.SetTexture($"_Normal{idx}", layer.normalMapTexture);
+                tMat.SetFloat($"_NormalScale{idx}", layer.normalScale);
+                tMat.SetFloat($"_Metallic{idx}", layer.metallic);
+                tMat.SetFloat($"_Smoothness{idx}", layer.smoothness);
                 tMat.EnableKeyword("_NORMALMAP");
                 if (layer.maskMapTexture != null)
                 {
                     tMat.EnableKeyword("_MASKMAP");
-                    tMat.SetFloat(string.Format("_LayerHasMask{0}", idx), 1f);
-                    tMat.SetTexture(string.Format("_Mask{0}", idx), layer.maskMapTexture);
+                    tMat.SetFloat($"_LayerHasMask{idx}", 1f);
+                    tMat.SetTexture($"_Mask{idx}", layer.maskMapTexture);
                 }
                 else
                 {
-                    tMat.SetFloat(string.Format("_LayerHasMask{0}", idx), 0f);
+                    tMat.SetFloat($"_LayerHasMask{idx}", 0f);
                 }
             }
 
             AssetDatabase.CreateAsset(tMat, mathPath);
-            if (assetPath != null)
-                assetPath.Add(mathPath);
+            assetPath?.Add(mathPath);
 #endif
         }
 
@@ -107,14 +104,14 @@ namespace MightyTerrainMesh
                 return;
             }
 
-            int matCount = t.terrainData.alphamapTextureCount;
+            var matCount = t.terrainData.alphamapTextureCount;
             if (matCount <= 0)
                 return;
             //base pass
-            SaveMixMaterail(path, dataName, t, 0, 0, "MT/TerrainLit", assetPath);
-            for (int i = 1; i < matCount; ++i)
+            SaveMixMaterial(path, dataName, t, 0, 0, "MT/TerrainLit", assetPath);
+            for (var i = 1; i < matCount; ++i)
             {
-                SaveMixMaterail(path, dataName, t, i, i * 4, "MT/TerrainLitAdd", assetPath);
+                SaveMixMaterial(path, dataName, t, i, i * 4, "MT/TerrainLitAdd", assetPath);
             }
 
             AssetDatabase.SaveAssets();
@@ -122,20 +119,20 @@ namespace MightyTerrainMesh
 #endif
         }
 
-        private static void SaveVTMaterail(string path, string dataName, Terrain t, int matIdx, int layerStart,
+        private static void SaveVTMaterial(string path, string dataName, Terrain t, int matIdx, int layerStart,
             string shaderPostfix,
-            List<string> albetoPath, List<string> bumpPath)
+            ICollection<string> albedoPath, ICollection<string> bumpPath)
         {
 #if UNITY_EDITOR
-            Texture2D alphaMap = ExportAlphaMap(path, dataName, t, matIdx);
+            var alphaMap = ExportAlphaMap(path, dataName, t, matIdx);
             if (alphaMap == null)
                 return;
             //
-            string mathPath = string.Format("{0}/VTDiffuse_{1}.mat", path, matIdx);
-            Material mat = AssetDatabase.LoadAssetAtPath<Material>(mathPath);
+            var mathPath = $"{path}/VTDiffuse_{matIdx}.mat";
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(mathPath);
             if (mat != null)
                 AssetDatabase.DeleteAsset(mathPath);
-            Material tMat = new Material(Shader.Find("MT/VTDiffuse" + shaderPostfix));
+            var tMat = new Material(Shader.Find("MT/VTDiffuse" + shaderPostfix));
             tMat.SetTexture("_Control", alphaMap);
             if (tMat == null)
             {
@@ -143,72 +140,70 @@ namespace MightyTerrainMesh
                 return;
             }
 
-            string bumpMatPath = string.Format("{0}/VTBump_{1}.mat", path, matIdx);
-            Material bmat = AssetDatabase.LoadAssetAtPath<Material>(bumpMatPath);
-            if (bmat != null)
+            var bumpMatPath = $"{path}/VTBump_{matIdx}.mat";
+            var bMat = AssetDatabase.LoadAssetAtPath<Material>(bumpMatPath);
+            if (bMat != null)
                 AssetDatabase.DeleteAsset(bumpMatPath);
-            Material bumpmat = new Material(Shader.Find("MT/VTBump" + shaderPostfix));
-            bumpmat.SetTexture("_Control", alphaMap);
-            if (bumpmat == null)
+            var bumpMat = new Material(Shader.Find("MT/VTBump" + shaderPostfix));
+            bumpMat.SetTexture("_Control", alphaMap);
+            if (bumpMat == null)
             {
                 MTLog.LogError("export terrain vt bump material failed");
                 return;
             }
 
-            for (int l = layerStart; l < layerStart + 4 && l < t.terrainData.terrainLayers.Length; ++l)
+            for (var l = layerStart; l < layerStart + 4 && l < t.terrainData.terrainLayers.Length; ++l)
             {
-                int idx = l - layerStart;
-                TerrainLayer layer = t.terrainData.terrainLayers[l];
-                Vector2 tiling = new Vector2(t.terrainData.size.x / layer.tileSize.x,
+                var idx = l - layerStart;
+                var layer = t.terrainData.terrainLayers[l];
+                var tiling = new Vector2(t.terrainData.size.x / layer.tileSize.x,
                     t.terrainData.size.z / layer.tileSize.y);
-                tMat.SetTexture(string.Format("_Splat{0}", idx), layer.diffuseTexture);
-                tMat.SetTextureOffset(string.Format("_Splat{0}", idx), layer.tileOffset);
-                tMat.SetTextureScale(string.Format("_Splat{0}", idx), tiling);
+                tMat.SetTexture($"_Splat{idx}", layer.diffuseTexture);
+                tMat.SetTextureOffset($"_Splat{idx}", layer.tileOffset);
+                tMat.SetTextureScale($"_Splat{idx}", tiling);
                 var diffuseRemapScale = layer.diffuseRemapMax - layer.diffuseRemapMin;
                 if (diffuseRemapScale.magnitude > 0)
-                    tMat.SetColor(string.Format("_DiffuseRemapScale{0}", idx), diffuseRemapScale);
+                    tMat.SetColor($"_DiffuseRemapScale{idx}", diffuseRemapScale);
                 else
-                    tMat.SetColor(string.Format("_DiffuseRemapScale{0}", idx), Color.white);
+                    tMat.SetColor($"_DiffuseRemapScale{idx}", Color.white);
                 if (layer.maskMapTexture != null)
                 {
-                    tMat.SetFloat(string.Format("_HasMask{0}", idx), 1f);
-                    tMat.SetTexture(string.Format("_Mask{0}", idx), layer.maskMapTexture);
+                    tMat.SetFloat($"_HasMask{idx}", 1f);
+                    tMat.SetTexture($"_Mask{idx}", layer.maskMapTexture);
                 }
                 else
                 {
-                    tMat.SetFloat(string.Format("_HasMask{0}", idx), 0f);
+                    tMat.SetFloat($"_HasMask{idx}", 0f);
                 }
 
-                tMat.SetFloat(string.Format("_Smoothness{0}", idx), layer.smoothness);
+                tMat.SetFloat($"_Smoothness{idx}", layer.smoothness);
 
-                bumpmat.SetTexture(string.Format("_Normal{0}", idx), layer.normalMapTexture);
-                bumpmat.SetFloat(string.Format("_NormalScale{0}", idx), layer.normalScale);
-                bumpmat.SetTextureOffset(string.Format("_Normal{0}", idx), layer.tileOffset);
-                bumpmat.SetTextureScale(string.Format("_Normal{0}", idx), tiling);
+                bumpMat.SetTexture($"_Normal{idx}", layer.normalMapTexture);
+                bumpMat.SetFloat($"_NormalScale{idx}", layer.normalScale);
+                bumpMat.SetTextureOffset($"_Normal{idx}", layer.tileOffset);
+                bumpMat.SetTextureScale($"_Normal{idx}", tiling);
                 if (layer.maskMapTexture != null)
                 {
-                    bumpmat.SetFloat(string.Format("_HasMask{0}", idx), 1f);
-                    bumpmat.SetTexture(string.Format("_Mask{0}", idx), layer.maskMapTexture);
+                    bumpMat.SetFloat($"_HasMask{idx}", 1f);
+                    bumpMat.SetTexture($"_Mask{idx}", layer.maskMapTexture);
                 }
                 else
                 {
-                    bumpmat.SetFloat(string.Format("_HasMask{0}", idx), 0f);
+                    bumpMat.SetFloat($"_HasMask{idx}", 0f);
                 }
 
-                bumpmat.SetFloat(string.Format("_Metallic{0}", idx), layer.metallic);
+                bumpMat.SetFloat($"_Metallic{idx}", layer.metallic);
             }
 
             AssetDatabase.CreateAsset(tMat, mathPath);
-            if (albetoPath != null)
-                albetoPath.Add(mathPath);
-            AssetDatabase.CreateAsset(bumpmat, bumpMatPath);
-            if (bumpPath != null)
-                bumpPath.Add(bumpMatPath);
+            albedoPath?.Add(mathPath);
+            AssetDatabase.CreateAsset(bumpMat, bumpMatPath);
+            bumpPath?.Add(bumpMatPath);
 #endif
         }
 
         public static void SaveVTMaterials(string path, string dataName, Terrain t,
-            List<string> albetoPath, List<string> bumpPath)
+            List<string> albedoPath, List<string> bumpPath)
         {
 #if UNITY_EDITOR
             if (t.terrainData == null)
@@ -217,14 +212,14 @@ namespace MightyTerrainMesh
                 return;
             }
 
-            int matCount = t.terrainData.alphamapTextureCount;
+            var matCount = t.terrainData.alphamapTextureCount;
             if (matCount <= 0)
                 return;
             //base pass
-            SaveVTMaterail(path, dataName, t, 0, 0, "", albetoPath, bumpPath);
-            for (int i = 1; i < matCount; ++i)
+            SaveVTMaterial(path, dataName, t, 0, 0, "", albedoPath, bumpPath);
+            for (var i = 1; i < matCount; ++i)
             {
-                SaveVTMaterail(path, dataName, t, i, i * 4, "Add", albetoPath, bumpPath);
+                SaveVTMaterial(path, dataName, t, i, i * 4, "Add", albedoPath, bumpPath);
             }
 
             AssetDatabase.SaveAssets();
@@ -232,36 +227,36 @@ namespace MightyTerrainMesh
 #endif
         }
 
-        private static Material GetBakeAlbeto(Terrain t, int matIdx, int layerStart, string shaderName)
+        private static Material GetBakeAlbedo(Terrain t, int matIdx, int layerStart, string shaderName)
         {
 #if UNITY_EDITOR
-            Material tMat = new Material(Shader.Find(shaderName));
+            var tMat = new Material(Shader.Find(shaderName));
             if (matIdx < t.terrainData.alphamapTextureCount)
             {
                 var alphaMap = t.terrainData.alphamapTextures[matIdx];
                 tMat.SetTexture("_Control", alphaMap);
             }
 
-            for (int l = layerStart; l < layerStart + 4 && l < t.terrainData.terrainLayers.Length; ++l)
+            for (var l = layerStart; l < layerStart + 4 && l < t.terrainData.terrainLayers.Length; ++l)
             {
-                int idx = l - layerStart;
-                TerrainLayer layer = t.terrainData.terrainLayers[l];
-                Vector2 tiling = new Vector2(t.terrainData.size.x / layer.tileSize.x,
+                var idx = l - layerStart;
+                var layer = t.terrainData.terrainLayers[l];
+                var tiling = new Vector2(t.terrainData.size.x / layer.tileSize.x,
                     t.terrainData.size.z / layer.tileSize.y);
-                tMat.SetTexture(string.Format("_Splat{0}", idx), layer.diffuseTexture);
-                tMat.SetTextureOffset(string.Format("_Splat{0}", idx), layer.tileOffset);
-                tMat.SetTextureScale(string.Format("_Splat{0}", idx), tiling);
+                tMat.SetTexture($"_Splat{idx}", layer.diffuseTexture);
+                tMat.SetTextureOffset($"_Splat{idx}", layer.tileOffset);
+                tMat.SetTextureScale($"_Splat{idx}", tiling);
                 if (layer.maskMapTexture != null)
                 {
-                    tMat.SetFloat(string.Format("_HasMask{0}", idx), 1f);
-                    tMat.SetTexture(string.Format("_Mask{0}", idx), layer.maskMapTexture);
+                    tMat.SetFloat($"_HasMask{idx}", 1f);
+                    tMat.SetTexture($"_Mask{idx}", layer.maskMapTexture);
                 }
                 else
                 {
-                    tMat.SetFloat(string.Format("_HasMask{0}", idx), 0f);
+                    tMat.SetFloat($"_HasMask{idx}", 0f);
                 }
 
-                tMat.SetFloat(string.Format("_Smoothness{0}", idx), layer.smoothness);
+                tMat.SetFloat($"_Smoothness{idx}", layer.smoothness);
             }
 
             return tMat;
@@ -273,34 +268,34 @@ namespace MightyTerrainMesh
         private static Material GetBakeNormal(Terrain t, int matIdx, int layerStart, string shaderName)
         {
 #if UNITY_EDITOR
-            Material tMat = new Material(Shader.Find(shaderName));
+            var tMat = new Material(Shader.Find(shaderName));
             if (matIdx < t.terrainData.alphamapTextureCount)
             {
                 var alphaMap = t.terrainData.alphamapTextures[matIdx];
                 tMat.SetTexture("_Control", alphaMap);
             }
 
-            for (int l = layerStart; l < layerStart + 4 && l < t.terrainData.terrainLayers.Length; ++l)
+            for (var l = layerStart; l < layerStart + 4 && l < t.terrainData.terrainLayers.Length; ++l)
             {
-                int idx = l - layerStart;
-                TerrainLayer layer = t.terrainData.terrainLayers[l];
-                Vector2 tiling = new Vector2(t.terrainData.size.x / layer.tileSize.x,
+                var idx = l - layerStart;
+                var layer = t.terrainData.terrainLayers[l];
+                var tiling = new Vector2(t.terrainData.size.x / layer.tileSize.x,
                     t.terrainData.size.z / layer.tileSize.y);
-                tMat.SetTexture(string.Format("_Normal{0}", idx), layer.normalMapTexture);
-                tMat.SetFloat(string.Format("_NormalScale{0}", idx), layer.normalScale);
-                tMat.SetTextureOffset(string.Format("_Normal{0}", idx), layer.tileOffset);
-                tMat.SetTextureScale(string.Format("_Normal{0}", idx), tiling);
+                tMat.SetTexture($"_Normal{idx}", layer.normalMapTexture);
+                tMat.SetFloat($"_NormalScale{idx}", layer.normalScale);
+                tMat.SetTextureOffset($"_Normal{idx}", layer.tileOffset);
+                tMat.SetTextureScale($"_Normal{idx}", tiling);
                 if (layer.maskMapTexture != null)
                 {
-                    tMat.SetFloat(string.Format("_HasMask{0}", idx), 1f);
-                    tMat.SetTexture(string.Format("_Mask{0}", idx), layer.maskMapTexture);
+                    tMat.SetFloat($"_HasMask{idx}", 1f);
+                    tMat.SetTexture($"_Mask{idx}", layer.maskMapTexture);
                 }
                 else
                 {
-                    tMat.SetFloat(string.Format("_HasMask{0}", idx), 0f);
+                    tMat.SetFloat($"_HasMask{idx}", 0f);
                 }
 
-                tMat.SetFloat(string.Format("_Metallic{0}", idx), layer.metallic);
+                tMat.SetFloat($"_Metallic{idx}", layer.metallic);
             }
 
             return tMat;
@@ -309,7 +304,7 @@ namespace MightyTerrainMesh
 #endif
         }
 
-        public static void GetBakeMaterials(Terrain t, Material[] albetos, Material[] bumps)
+        public static void GetBakeMaterials(Terrain t, Material[] albedoList, Material[] bumps)
         {
 #if UNITY_EDITOR
             if (t.terrainData == null)
@@ -318,18 +313,18 @@ namespace MightyTerrainMesh
                 return;
             }
 
-            int matCount = t.terrainData.alphamapTextureCount;
-            if (matCount <= 0 || albetos == null || albetos.Length < 1 || bumps == null || bumps.Length < 1)
+            var matCount = t.terrainData.alphamapTextureCount;
+            if (matCount <= 0 || albedoList == null || albedoList.Length < 1 || bumps == null || bumps.Length < 1)
                 return;
             //base pass
-            albetos[0] = GetBakeAlbeto(t, 0, 0, "MT/VTDiffuse");
-            for (int i = 1; i < matCount && i < albetos.Length; ++i)
+            albedoList[0] = GetBakeAlbedo(t, 0, 0, "MT/VTDiffuse");
+            for (var i = 1; i < matCount && i < albedoList.Length; ++i)
             {
-                albetos[i] = GetBakeAlbeto(t, i, i * 4, "MT/VTDiffuseAdd");
+                albedoList[i] = GetBakeAlbedo(t, i, i * 4, "MT/VTDiffuseAdd");
             }
 
             bumps[0] = GetBakeNormal(t, 0, 0, "MT/VTBump");
-            for (int i = 1; i < matCount && i < albetos.Length; ++i)
+            for (var i = 1; i < matCount && i < albedoList.Length; ++i)
             {
                 bumps[i] = GetBakeNormal(t, i, i * 4, "MT/VTBumpAdd");
             }
