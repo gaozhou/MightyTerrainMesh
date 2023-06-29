@@ -244,12 +244,12 @@ namespace MightyTerrainMesh
 
         public bool AddMesh(MTMeshData data)
         {
-            if (Bound.Contains(data.BND.center) && data.BND.size.x > 0.5f * Bound.size.x)
+            if (Bound.Contains(data.Bounds.center) && data.Bounds.size.x > 0.5f * Bound.size.x)
             {
-                MeshID = data.meshId;
-                LODLv = data.lodLv;
-                data.lods[0].uvmin = UVMin;
-                data.lods[0].uvmax = UVMax;
+                MeshID = data.MeshId;
+                LODLv = data.LodLevel;
+                data.LODS[0].UVMin = UVMin;
+                data.LODS[0].UVMax = UVMax;
                 return true;
             }
 

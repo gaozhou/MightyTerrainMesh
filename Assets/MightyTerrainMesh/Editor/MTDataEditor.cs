@@ -142,10 +142,10 @@ public class MTDataEditor : EditorWindow
                     MTMeshData data = tessellationJob.Mesh[i];
                     if (!treeRoot.AddMesh(data))
                     {
-                        Debug.LogError("mesh can't insert into tree : " + data.meshId);
+                        Debug.LogError("mesh can't insert into tree : " + data.MeshId);
                     }
                     if (start_meshId < 0)
-                        start_meshId = data.meshId;
+                        start_meshId = data.MeshId;
                     EditorUtility.DisplayProgressBar("saving mesh data", "processing", (float)i / tessellationJob.Mesh.Length);
                     if (packed % datapack == 0)
                     {
@@ -153,7 +153,7 @@ public class MTDataEditor : EditorWindow
                         {
                             File.WriteAllBytes(string.Format("{0}/{1}_{2}.bytes", meshFulllPath, terrainTarget.name, start_meshId), stream.ToArray());
                             stream.Close();
-                            start_meshId = data.meshId;
+                            start_meshId = data.MeshId;
                             stream = new MemoryStream();
                         }
                         packed = 0;
@@ -168,7 +168,7 @@ public class MTDataEditor : EditorWindow
                     stream.Position = packed * sizeof(int);
                     MTFileUtils.WriteInt(stream, reserve);
                     stream.Position = reserve;
-                    MTMeshUtils.Serialize(stream, data.lods[0]);
+                    MTMeshUtils.Serialize(stream, data.LODS[0]);
                     ++packed;
                 }
                 //last one

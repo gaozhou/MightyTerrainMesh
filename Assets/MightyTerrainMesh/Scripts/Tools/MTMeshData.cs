@@ -9,30 +9,30 @@ namespace MightyTerrainMesh
     {
         public static void Serialize(Stream stream, MTMeshData.LOD lod)
         {
-            MTFileUtils.WriteVector2(stream, lod.uvmin);
-            MTFileUtils.WriteVector2(stream, lod.uvmax);
+            MTFileUtils.WriteVector2(stream, lod.UVMin);
+            MTFileUtils.WriteVector2(stream, lod.UVMax);
             //vertices
-            byte[] uBuff = BitConverter.GetBytes(lod.vertices.Length);
+            var uBuff = BitConverter.GetBytes(lod.Vertices.Length);
             stream.Write(uBuff, 0, uBuff.Length);
-            foreach (var v in lod.vertices)
+            foreach (var v in lod.Vertices)
                 MTFileUtils.WriteVector3(stream, v);
             //normals
-            uBuff = BitConverter.GetBytes(lod.normals.Length);
+            uBuff = BitConverter.GetBytes(lod.Normals.Length);
             stream.Write(uBuff, 0, uBuff.Length);
-            foreach (var n in lod.normals)
+            foreach (var n in lod.Normals)
                 MTFileUtils.WriteVector3(stream, n);
             //uvs
-            uBuff = BitConverter.GetBytes(lod.uvs.Length);
+            uBuff = BitConverter.GetBytes(lod.Uvs.Length);
             stream.Write(uBuff, 0, uBuff.Length);
-            foreach (var uv in lod.uvs)
+            foreach (var uv in lod.Uvs)
                 MTFileUtils.WriteVector2(stream, uv);
             //faces
-            uBuff = BitConverter.GetBytes(lod.faces.Length);
+            uBuff = BitConverter.GetBytes(lod.Faces.Length);
             stream.Write(uBuff, 0, uBuff.Length);
-            foreach (var face in lod.faces)
+            foreach (var face in lod.Faces)
             {
                 //强转为ushort
-                ushort val = (ushort)face;
+                var val = (ushort)face;
                 uBuff = BitConverter.GetBytes(val);
                 stream.Write(uBuff, 0, uBuff.Length);
             }
@@ -44,33 +44,33 @@ namespace MightyTerrainMesh
             rm.UVMin = MTFileUtils.ReadVector2(stream);
             rm.UVMax = MTFileUtils.ReadVector2(stream);
             //vertices
-            List<Vector3> vec3Cache = new List<Vector3>();
-            byte[] nBuff = new byte[sizeof(int)];
+            var vec3Cache = new List<Vector3>();
+            var nBuff = new byte[sizeof(int)];
             stream.Read(nBuff, 0, sizeof(int));
-            int len = BitConverter.ToInt32(nBuff, 0);
-            for (int i = 0; i < len; ++i)
+            var len = BitConverter.ToInt32(nBuff, 0);
+            for (var i = 0; i < len; ++i)
                 vec3Cache.Add(MTFileUtils.ReadVector3(stream));
             rm.Mesh.SetVertices(vec3Cache.ToArray());
             //normals
             vec3Cache.Clear();
             stream.Read(nBuff, 0, sizeof(int));
             len = BitConverter.ToInt32(nBuff, 0);
-            for (int i = 0; i < len; ++i)
+            for (var i = 0; i < len; ++i)
                 vec3Cache.Add(MTFileUtils.ReadVector3(stream));
             rm.Mesh.SetNormals(vec3Cache.ToArray());
             //uvs
-            List<Vector2> vec2Cache = new List<Vector2>();
+            var vec2Cache = new List<Vector2>();
             stream.Read(nBuff, 0, sizeof(int));
             len = BitConverter.ToInt32(nBuff, 0);
-            for (int i = 0; i < len; ++i)
+            for (var i = 0; i < len; ++i)
                 vec2Cache.Add(MTFileUtils.ReadVector2(stream));
             rm.Mesh.SetUVs(0, vec2Cache.ToArray());
             //faces
-            List<int> intCache = new List<int>();
+            var intCache = new List<int>();
             stream.Read(nBuff, 0, sizeof(int));
             len = BitConverter.ToInt32(nBuff, 0);
-            byte[] fBuff = new byte[sizeof(ushort)];
-            for (int i = 0; i < len; ++i)
+            var fBuff = new byte[sizeof(ushort)];
+            for (var i = 0; i < len; ++i)
             {
                 stream.Read(fBuff, 0, sizeof(ushort));
                 intCache.Add(BitConverter.ToUInt16(fBuff, 0));
@@ -84,30 +84,30 @@ namespace MightyTerrainMesh
     {
         public class LOD
         {
-            public Vector3[] vertices;
-            public Vector3[] normals;
-            public Vector2[] uvs;
-            public int[] faces;
-            public Vector2 uvmin;
-            public Vector2 uvmax;
+            public Vector3[] Vertices;
+            public Vector3[] Normals;
+            public Vector2[] Uvs;
+            public int[] Faces;
+            public Vector2 UVMin;
+            public Vector2 UVMax;
         }
 
-        public int meshId { get; private set; }
-        public Bounds BND { get; private set; }
-        public LOD[] lods;
-        public int lodLv = -1;
+        public int MeshId { get; private set; }
+        public Bounds Bounds { get; private set; }
+        public LOD[] LODS;
+        public readonly int LodLevel = -1;
 
-        public MTMeshData(int id, Bounds bnd)
+        public MTMeshData(int id, Bounds bounds)
         {
-            meshId = id;
-            BND = bnd;
+            MeshId = id;
+            Bounds = bounds;
         }
 
-        public MTMeshData(int id, Bounds bnd, int lv)
+        public MTMeshData(int id, Bounds bounds, int level)
         {
-            meshId = id;
-            BND = bnd;
-            lodLv = lv;
+            MeshId = id;
+            Bounds = bounds;
+            LodLevel = level;
         }
     }
 }

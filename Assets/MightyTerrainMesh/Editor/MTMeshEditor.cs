@@ -184,7 +184,7 @@ public class MTMeshEditor : EditorWindow
             {
                 EditorUtility.DisplayProgressBar("saving data", "processing", (float)i / tessellationJob.Mesh.Length);
                 MTMeshData data = tessellationJob.Mesh[i];
-                for (int lod = 0; lod < data.lods.Length; ++lod)
+                for (int lod = 0; lod < data.LODS.Length; ++lod)
                 {
                     var folder = lodFolder[lod];
                     if (!AssetDatabase.IsValidFolder(Path.Combine(folder, "Meshes")))
@@ -192,8 +192,8 @@ public class MTMeshEditor : EditorWindow
                         AssetDatabase.CreateFolder(folder, "Meshes");
                         AssetDatabase.Refresh();
                     }
-                    var mesh = SaveMesh(folder + "/Meshes", data.meshId, data.lods[lod], genUV2);
-                    var baker = new MeshPrefabBaker(lod, data.meshId, mesh, data.lods[lod].uvmin, data.lods[lod].uvmax);
+                    var mesh = SaveMesh(folder + "/Meshes", data.MeshId, data.LODS[lod], genUV2);
+                    var baker = new MeshPrefabBaker(lod, data.MeshId, mesh, data.LODS[lod].UVMin, data.LODS[lod].UVMax);
                     bakers.Add(baker);
                 }
             }
@@ -299,14 +299,14 @@ public class MTMeshEditor : EditorWindow
     Mesh SaveMesh(string folder, int dataID, MTMeshData.LOD data, bool genUV2)
     {
         Mesh mesh = new Mesh();
-        mesh.vertices = data.vertices;
-        mesh.normals = data.normals;
-        mesh.uv = data.uvs;
+        mesh.vertices = data.Vertices;
+        mesh.normals = data.Normals;
+        mesh.uv = data.Uvs;
         if (genUV2)
         {
-            mesh.uv2 = data.uvs;
+            mesh.uv2 = data.Uvs;
         }
-        mesh.triangles = data.faces;
+        mesh.triangles = data.Faces;
         AssetDatabase.CreateAsset(mesh, string.Format("{0}/{1}.mesh", folder, dataID));
         return mesh;
     }

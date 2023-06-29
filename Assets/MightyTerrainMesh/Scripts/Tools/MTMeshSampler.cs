@@ -238,11 +238,11 @@ namespace MightyTerrainMesh
         private readonly Dictionary<byte, KdTree<float, int>> _boundaryKdTree =
             new Dictionary<byte, KdTree<float, int>>();
 
-        public SamplerTree(int sub, Vector3 center, Vector2 size, Vector2 uv, Vector2 uvstep)
+        public SamplerTree(int sub, Vector3 center, Vector2 size, Vector2 uv, Vector2 uvStep)
         {
-            _node = new SamplerNode(sub, center, size, uv, uvstep);
-            UVMin = uv - 0.5f * uvstep;
-            UVMax = uv + 0.5f * uvstep;
+            _node = new SamplerNode(sub, center, size, uv, uvStep);
+            UVMin = uv - 0.5f * uvStep;
+            UVMax = uv + 0.5f * uvStep;
         }
 
         private void CombineTree(float angleErr)
@@ -281,7 +281,7 @@ namespace MightyTerrainMesh
             var tree = _boundaryKdTree[flag];
             foreach (var vt in src)
             {
-                var nodes = tree.GetNearestNeighbours(new float[] { vt.Position.x, vt.Position.z }, 1);
+                var nodes = tree.GetNearestNeighbours(new[] { vt.Position.x, vt.Position.z }, 1);
                 if (nodes != null && nodes.Length > 0)
                 {
                     var dis = Vector2.Distance(new Vector2(vt.Position.x, vt.Position.z),
@@ -310,11 +310,11 @@ namespace MightyTerrainMesh
             _node.GetData(Vertices, Boundaries);
         }
 
-        public void StitchBorder(byte flag, byte nflag, float minDis, SamplerTree neighbour)
+        public void StitchBorder(byte flag, byte nFlag, float minDis, SamplerTree neighbour)
         {
             if (neighbour == null)
                 return;
-            if (flag <= RBCorner || nflag <= RBCorner)
+            if (flag <= RBCorner || nFlag <= RBCorner)
             {
                 return;
             }
@@ -325,28 +325,28 @@ namespace MightyTerrainMesh
                 return;
             }
 
-            if (!neighbour.Boundaries.ContainsKey(nflag))
+            if (!neighbour.Boundaries.ContainsKey(nFlag))
             {
-                MTLog.LogError("SamplerTree neighbour boundary doesn't contains corner : " + nflag);
+                MTLog.LogError("SamplerTree neighbour boundary doesn't contains corner : " + nFlag);
                 return;
             }
 
-            if (StitchedBorders.Contains(flag) && neighbour.StitchedBorders.Contains(nflag))
+            if (StitchedBorders.Contains(flag) && neighbour.StitchedBorders.Contains(nFlag))
                 return;
-            if (Boundaries[flag].Count > neighbour.Boundaries[nflag].Count)
+            if (Boundaries[flag].Count > neighbour.Boundaries[nFlag].Count)
             {
-                neighbour.Boundaries[nflag].Clear();
-                neighbour.Boundaries[nflag].AddRange(Boundaries[flag]);
+                neighbour.Boundaries[nFlag].Clear();
+                neighbour.Boundaries[nFlag].AddRange(Boundaries[flag]);
             }
             else
             {
                 Boundaries[flag].Clear();
-                Boundaries[flag].AddRange(neighbour.Boundaries[nflag]);
+                Boundaries[flag].AddRange(neighbour.Boundaries[nFlag]);
             }
 
             //
             StitchedBorders.Add(flag);
-            neighbour.StitchedBorders.Add(nflag);
+            neighbour.StitchedBorders.Add(nFlag);
         }
     }
 }
