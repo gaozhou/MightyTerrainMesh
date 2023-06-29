@@ -42,7 +42,7 @@ namespace MightyTerrainMesh
             meshRepresentation.Triangulate(geometry);
             if (meshRepresentation.Vertices.Count != lVerts.Count)
             {
-                Debug.LogError("trianglate seems failed");
+                Debug.LogError("triangulate seems failed");
             }
 
             var vIdx = 0;
