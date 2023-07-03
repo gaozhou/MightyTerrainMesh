@@ -84,18 +84,10 @@ namespace MightyTerrainMesh
                 _ => size
             };
 
-            IMTVirtualTexture[] ret;
             if (!_texturePools.ContainsKey(texSize))
                 _texturePools.Add(texSize, new Queue<IMTVirtualTexture[]>());
             var q = _texturePools[texSize];
-            if (q.Count > 0)
-            {
-                ret = q.Dequeue() as RuntimeBakeTexture[];
-            }
-            else
-            {
-                ret = new IMTVirtualTexture[] { new RuntimeBakeTexture(texSize), new RuntimeBakeTexture(texSize) };
-            }
+            var ret = q.Count > 0 ? q.Dequeue() : new IMTVirtualTexture[] { new RuntimeBakeTexture(texSize), new RuntimeBakeTexture(texSize) };
 
             return ret;
         }
