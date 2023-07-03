@@ -60,7 +60,7 @@ namespace MightyTerrainMesh
         //
         private ImtPooledRenderMesh()
         {
-            _mGo = new GameObject("_mtpatch");
+            _mGo = new GameObject("mt patch");
             _mMesh = _mGo.AddComponent<MeshFilter>();
             _mRenderer = _mGo.AddComponent<MeshRenderer>();
             _mRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
