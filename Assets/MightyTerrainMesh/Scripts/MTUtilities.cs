@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 namespace MightyTerrainMesh
 {
@@ -14,6 +15,7 @@ namespace MightyTerrainMesh
     public class MTArray<T>
     {
         public T[] Data;
+        private HashSet<T> _data = new HashSet<T>();
         public int Length { get; private set; }
 
         public MTArray(int len)
@@ -27,11 +29,13 @@ namespace MightyTerrainMesh
                 return;
             Data = new T[len];
             Length = 0;
+            _data.Clear();
         }
 
         public void Reset()
         {
             Length = 0;
+            _data.Clear();
         }
 
         public void Add(T item)
@@ -42,18 +46,13 @@ namespace MightyTerrainMesh
             }
 
             Data[Length] = item;
+            _data.Add(item);
             ++Length;
         }
 
         public bool Contains(T item)
         {
-            for (var i = 0; i < Length; ++i)
-            {
-                if (Data[i].Equals(item))
-                    return true;
-            }
-
-            return false;
+            return _data.Contains(item);
         }
     }
 }

@@ -7,6 +7,7 @@ namespace MightyTerrainMesh
 
     public class MTQuadTreeNode
     {
+        public readonly int Index;
         public Bounds Bounds;
         public int CellIdx;
         public int MeshIdx = -1;
@@ -14,8 +15,14 @@ namespace MightyTerrainMesh
         public int[] Children = Array.Empty<int>();
         private float _diameter;
 
-        public MTQuadTreeNode(int cid)
+        public override int GetHashCode()
         {
+            return Index;
+        }
+
+        public MTQuadTreeNode(int cid, int index = -1)
+        {
+            Index = index;
             CellIdx = cid;
             InnerInit();
         }
@@ -100,7 +107,7 @@ namespace MightyTerrainMesh
             MinCellSize = float.MaxValue;
             for (var i = 0; i < treeLen; ++i)
             {
-                var node = new MTQuadTreeNode(-1);
+                var node = new MTQuadTreeNode(-1, i);
                 node.Deserialize(stream, offset);
                 _treeNodes[i] = node;
                 var size = Mathf.Min(node.Bounds.size.x, node.Bounds.size.z);
