@@ -153,7 +153,7 @@ namespace MightyTerrainMesh
         private IMTVirtualTextureReceiver _receiver;
         private long _cmdId;
 
-        public void Reset(long cmd, RuntimeBakeTexture[] ts, IMTVirtualTextureReceiver r)
+        public void Reset(long cmd, IMTVirtualTexture[] ts, IMTVirtualTextureReceiver r)
         {
             _cmdId = cmd;
             Textures = ts;
