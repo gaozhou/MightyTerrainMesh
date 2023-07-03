@@ -2,6 +2,7 @@
 using System.IO;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Serialization;
 
 namespace MightyTerrainMesh
 {
@@ -109,7 +110,7 @@ namespace MightyTerrainMesh
         public MTData header;
         public MTLODPolicy lodPolicy;
         public Camera cullCamera;
-        public GameObject VTCreatorGo;
+        [FormerlySerializedAs("VTCreatorGo")] public GameObject vtCreatorGo;
 
         //
         private MTRuntimeMeshPool _meshPool;
@@ -124,6 +125,7 @@ namespace MightyTerrainMesh
         private IVTCreator _vtCreator;
         private Matrix4x4 _projM;
         private Matrix4x4 _prevWorld2Cam;
+        private bool _init;
 
         private void ActiveMesh(MTQuadTreeNode node)
         {
@@ -142,6 +144,15 @@ namespace MightyTerrainMesh
 
         private void Awake()
         {
+            if (vtCreatorGo)
+                Init(vtCreatorGo.GetComponent<IVTCreator>());
+            RenderPipelineManager.beginFrameRendering += OnFrameRendering;
+        }
+
+        public void Init(IVTCreator creator)
+        {
+            if (_init)
+                return;
             IMeshDataLoader loader = new MeshDataResLoader();
             _quadtree = new MTQuadTreeUtil(header.treeData.bytes, transform.position);
             _heightMap = new MTHeightMap(_quadtree.Bound, header.heightmapResolution, header.heightmapScale,
@@ -149,10 +160,9 @@ namespace MightyTerrainMesh
             _activeCmd = new MTArray<MTQuadTreeNode>(_quadtree.NodeCount);
             _deactivateCmd = new MTArray<MTQuadTreeNode>(_quadtree.NodeCount);
             _meshPool = new MTRuntimeMeshPool(header, loader);
-            _vtCreator = VTCreatorGo.GetComponent<IVTCreator>();
+            _vtCreator = creator;
             _prevWorld2Cam = Matrix4x4.identity;
-            
-            RenderPipelineManager.beginFrameRendering += OnFrameRendering;
+            _init = true;
         }
 
         void OnFrameRendering(ScriptableRenderContext context, Camera[] cameras)
