@@ -165,7 +165,7 @@ namespace MightyTerrainMesh
             _init = true;
         }
 
-        void OnFrameRendering(ScriptableRenderContext context, Camera[] cameras)
+        private void OnFrameRendering(ScriptableRenderContext context, Camera[] cameras)
         {
             if (_quadtree == null || cullCamera == null) return;
             var world2Cam = cullCamera.worldToCameraMatrix;

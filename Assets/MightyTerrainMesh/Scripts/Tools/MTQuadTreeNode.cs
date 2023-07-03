@@ -68,17 +68,18 @@ namespace MightyTerrainMesh
 
     public class MTQuadTreeUtil
     {
-        public int NodeCount => TreeNodes.Length;
+        public int NodeCount => _treeNodes.Length;
 
-        public Bounds Bound => TreeNodes[0].Bounds;
+        public Bounds Bound => _treeNodes[0].Bounds;
 
-        public MTArray<MTQuadTreeNode> ActiveNodes => ActiveMeshes;
+        public MTArray<MTQuadTreeNode> ActiveNodes { get; private set; }
 
-        public float MinCellSize { get; private set; }
-        protected MTQuadTreeNode[] TreeNodes;
-        protected MTArray<MTQuadTreeNode> Candidates;
-        protected MTArray<MTQuadTreeNode> ActiveMeshes;
-        protected MTArray<MTQuadTreeNode> VisibleMeshes;
+        private float MinCellSize { get; set; }
+        private MTQuadTreeNode[] _treeNodes;
+        private MTArray<MTQuadTreeNode> _candidates;
+        private MTArray<MTQuadTreeNode> _visibleMeshes;
+
+        private readonly Plane[] _planes = new Plane[6];
 
         public MTQuadTreeUtil(byte[] data, Vector3 offset)
         {
@@ -95,13 +96,13 @@ namespace MightyTerrainMesh
 
         public void InnerInit(int treeLen, Stream stream, Vector3 offset)
         {
-            TreeNodes = new MTQuadTreeNode[treeLen];
+            _treeNodes = new MTQuadTreeNode[treeLen];
             MinCellSize = float.MaxValue;
             for (var i = 0; i < treeLen; ++i)
             {
                 var node = new MTQuadTreeNode(-1);
                 node.Deserialize(stream, offset);
-                TreeNodes[i] = node;
+                _treeNodes[i] = node;
                 var size = Mathf.Min(node.Bounds.size.x, node.Bounds.size.z);
                 if (size < MinCellSize)
                 {
@@ -109,36 +110,36 @@ namespace MightyTerrainMesh
                 }
             }
 
-            Candidates = new MTArray<MTQuadTreeNode>(TreeNodes.Length);
-            ActiveMeshes = new MTArray<MTQuadTreeNode>(TreeNodes.Length);
-            VisibleMeshes = new MTArray<MTQuadTreeNode>(TreeNodes.Length);
+            _candidates = new MTArray<MTQuadTreeNode>(_treeNodes.Length);
+            ActiveNodes = new MTArray<MTQuadTreeNode>(_treeNodes.Length);
+            _visibleMeshes = new MTArray<MTQuadTreeNode>(_treeNodes.Length);
         }
 
         public void ResetRuntimeCache()
         {
-            Candidates.Reset();
-            ActiveMeshes.Reset();
-            VisibleMeshes.Reset();
+            _candidates.Reset();
+            ActiveNodes.Reset();
+            _visibleMeshes.Reset();
         }
 
         public void CullQuadtree(Vector3 viewCenter, float fov, float screenH, float screenW, Matrix4x4 world2Cam,
             Matrix4x4 projectMatrix,
             MTArray<MTQuadTreeNode> activeCmd, MTArray<MTQuadTreeNode> deactivateCmd, MTLODPolicy lodPolicy)
         {
-            var planes = GeometryUtility.CalculateFrustumPlanes(projectMatrix * world2Cam);
-            VisibleMeshes.Reset();
-            Candidates.Reset();
-            Candidates.Add(TreeNodes[0]);
+            GeometryUtility.CalculateFrustumPlanes(projectMatrix * world2Cam, _planes);
+            _visibleMeshes.Reset();
+            _candidates.Reset();
+            _candidates.Add(_treeNodes[0]);
             //此处仅是限制最多循环次数
             var loop = 0;
             var nextStartIdx = 0;
-            for (; loop < TreeNodes.Length; ++loop)
+            for (; loop < _treeNodes.Length; ++loop)
             {
                 var cIdx = nextStartIdx;
-                nextStartIdx = Candidates.Length;
+                nextStartIdx = _candidates.Length;
                 for (; cIdx < nextStartIdx; ++cIdx)
                 {
-                    var node = Candidates.Data[cIdx];
+                    var node = _candidates.Data[cIdx];
                     var stopChild = false;
                     if (node.MeshIdx >= 0)
                     {
@@ -146,7 +147,7 @@ namespace MightyTerrainMesh
                         var lodLv = lodPolicy.GetLODLevel(pixelSize, screenW);
                         if (node.LodLevel <= lodLv)
                         {
-                            VisibleMeshes.Add(node);
+                            _visibleMeshes.Add(node);
                             //此级以下全部隐藏
                             stopChild = true;
                         }
@@ -155,39 +156,39 @@ namespace MightyTerrainMesh
                     if (stopChild || node.Children.Length <= 0) continue;
                     foreach (var c in node.Children)
                     {
-                        var childNode = TreeNodes[c];
-                        if (GeometryUtility.TestPlanesAABB(planes, childNode.Bounds))
+                        var childNode = _treeNodes[c];
+                        if (GeometryUtility.TestPlanesAABB(_planes, childNode.Bounds))
                         {
-                            Candidates.Add(childNode);
+                            _candidates.Add(childNode);
                         }
                     }
                 }
 
-                if (Candidates.Length == nextStartIdx)
+                if (_candidates.Length == nextStartIdx)
                     break;
             }
 
             //new cells
-            for (var i = 0; i < VisibleMeshes.Length; ++i)
+            for (var i = 0; i < _visibleMeshes.Length; ++i)
             {
-                var meshId = VisibleMeshes.Data[i];
-                if (!ActiveMeshes.Contains(meshId))
+                var meshId = _visibleMeshes.Data[i];
+                if (!ActiveNodes.Contains(meshId))
                 {
                     activeCmd.Add(meshId);
                 }
             }
 
             //old cells
-            for (var i = 0; i < ActiveMeshes.Length; ++i)
+            for (var i = 0; i < ActiveNodes.Length; ++i)
             {
-                var meshId = ActiveMeshes.Data[i];
-                if (!VisibleMeshes.Contains(meshId))
+                var meshId = ActiveNodes.Data[i];
+                if (!_visibleMeshes.Contains(meshId))
                 {
                     deactivateCmd.Add(meshId);
                 }
             }
 
-            (ActiveMeshes, VisibleMeshes) = (VisibleMeshes, ActiveMeshes);
+            (ActiveNodes, _visibleMeshes) = (_visibleMeshes, ActiveNodes);
         }
     }
 
