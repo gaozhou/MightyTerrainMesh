@@ -75,7 +75,7 @@ namespace MightyTerrainMesh
         private readonly List<IMTVirtualTexture> _activeTextures = new List<IMTVirtualTexture>();
         private readonly Queue<VTRenderJob> _bakedJobs = new Queue<VTRenderJob>();
 
-        private RuntimeBakeTexture[] PopTexture(int size)
+        private IMTVirtualTexture[] PopTexture(int size)
         {
             var texSize = texQuality switch
             {
@@ -84,7 +84,7 @@ namespace MightyTerrainMesh
                 _ => size
             };
 
-            RuntimeBakeTexture[] ret;
+            IMTVirtualTexture[] ret;
             if (!_texturePools.ContainsKey(texSize))
                 _texturePools.Add(texSize, new Queue<IMTVirtualTexture[]>());
             var q = _texturePools[texSize];
@@ -94,7 +94,7 @@ namespace MightyTerrainMesh
             }
             else
             {
-                ret = new[] { new RuntimeBakeTexture(texSize), new RuntimeBakeTexture(texSize) };
+                ret = new IMTVirtualTexture[] { new RuntimeBakeTexture(texSize), new RuntimeBakeTexture(texSize) };
             }
 
             return ret;
@@ -155,8 +155,8 @@ namespace MightyTerrainMesh
                 if (cmd.Receiver.WaitCmdId == cmd.CmdId)
                 {
                     var ts = PopTexture(cmd.Size);
-                    ts[0].Reset(cmd.UVMin, cmd.UVMax, cmd.BakeDiffuse);
-                    ts[1].Reset(cmd.UVMin, cmd.UVMax, cmd.BakeNormal);
+                    (ts[0] as RuntimeBakeTexture)?.Reset(cmd.UVMin, cmd.UVMax, cmd.BakeDiffuse);
+                    (ts[1] as RuntimeBakeTexture)?.Reset(cmd.UVMin, cmd.UVMax, cmd.BakeNormal);
                     var job = VTRenderJob.Pop();
                     job.Reset(cmd.CmdId, ts, cmd.Receiver);
                     job.DoJob();
